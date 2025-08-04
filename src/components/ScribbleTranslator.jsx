@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 
-// CORS対応の翻訳API
+// CORS対応の翻訳APIです
 const translateWithMyMemory = async (text, targetLang) => {
   try {
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=ja|${targetLang}`;
