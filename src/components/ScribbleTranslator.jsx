@@ -825,7 +825,7 @@ const ScribbleTranslator = () => {
         </div>
 
         {/* 文節表示（デバッグ用 - 必要なければ削除可） */}
-        {bunsetsuGroups.length > 0 && (
+{/*         {bunsetsuGroups.length > 0 && (
           <div style={{ 
             marginTop: '16px', 
             padding: '16px', 
@@ -846,6 +846,7 @@ const ScribbleTranslator = () => {
             ))}
           </div>
         )}
+         */}
 
         {showTranslations && selectedText && (
           <div style={styles.translationContainer}>
