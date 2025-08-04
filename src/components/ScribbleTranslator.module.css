@@ -1,0 +1,299 @@
+/* ScribbleTranslator.module.css */
+
+.container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fafc;
+  font-family: "Noto Sans JP", system-ui, -apple-system, sans-serif;
+}
+
+.header {
+  background: linear-gradient(135deg, #096FCA 0%, #76B7ED 100%);
+  color: white;
+  padding: 24px 32px;
+  box-shadow: 0 4px 20px rgba(9, 111, 202, 0.3);
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.subtitle {
+  color: #E1F5FE;
+  font-size: 16px;
+  margin: 0;
+  font-weight: 400;
+}
+
+.toolbar {
+  background-color: white;
+  padding: 16px 32px;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.toolbarInfo {
+  font-size: 14px;
+  color: #3A3E40;
+  flex: 1;
+}
+
+.toolbarButtons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.voiceButton {
+  padding: 8px 16px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.voiceButtonActive {
+  background-color: #ef4444;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.resetButton {
+  padding: 8px 16px;
+  background-color: #FF7669;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(255, 118, 105, 0.3);
+}
+
+.bunsetsuToggle {
+  padding: 8px 16px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.main {
+  flex: 1;
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.textContainer {
+  position: relative;
+  background-color: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  margin-bottom: 32px;
+}
+
+.textArea {
+  position: relative;
+  z-index: 10;
+  user-select: none;
+  font-size: 24px;
+  line-height: 1.8;
+  color: #3A3E40;
+  min-height: 100px;
+}
+
+.charSpan {
+  display: inline-block;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.selectedChar {
+  background-color: #E3F2FD;
+  border: 2px solid #096FCA;
+  border-radius: 6px;
+  padding: 4px 6px;
+  margin: 0 2px;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(9, 111, 202, 0.2);
+  cursor: pointer;
+}
+
+.bunsetsuBorder {
+  border-right: 2px dotted #FF7669;
+  padding-right: 3px;
+  margin-right: 3px;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.buttons {
+  position: absolute;
+  z-index: 30;
+  display: flex;
+  gap: 12px;
+}
+
+.translateButton {
+  padding: 12px 20px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.translateButtonLoading {
+  background-color: #9ca3af;
+  transform: scale(0.95);
+}
+
+.cancelButton {
+  padding: 12px 20px;
+  background-color: #96A0A6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.translationContainer {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  padding: 32px;
+}
+
+.translationTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #096FCA;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selectedTextBox {
+  background-color: #F0F8FF;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #B3D9FF;
+  margin-bottom: 24px;
+}
+
+.translationGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.translationCard {
+  background-color: #FAFBFC;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #E5E7EB;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.flagName {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.flag {
+  font-size: 24px;
+}
+
+.langName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3A3E40;
+}
+
+.translatedText {
+  color: #1f2937;
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 24px;
+}
+
+.loadingText {
+  color: #96A0A6;
+  font-style: italic;
+}
+
+.emptyState {
+  text-align: center;
+  color: #96A0A6;
+  font-size: 16px;
+  padding: 40px 0;
+}
+
+.aiStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  background-color: #d1fae5;
+  color: #065f46;
+  font-size: 12px;
+  font-weight: 500;
+}
