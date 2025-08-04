@@ -35,9 +35,9 @@ const ScribbleTranslator = () => {
   const [recognition, setRecognition]       = useState(null);
   const [currentText, setCurrentText]       = useState(initialText);
   const [isTokenizerReady, setIsTokenizerReady] = useState(false);
-  const [isBunsetsuMode, setIsBunsetsuMode] = useState(false); // デフォルトを文字モードに変更
+  const [isBunsetsuMode, setIsBunsetsuMode] = useState(true);
   const [isDrawing, setIsDrawing]           = useState(false);
-  const [kuromojiError, setKuromojiError]   = useState('');
+  const [kuromojiStatus, setKuromojiStatus] = useState('initializing'); // initializing, ready, error
 
   const targetLanguages = [
     { code: 'en', name: '英語',   flag: '🇺🇸' },
@@ -80,36 +80,35 @@ const ScribbleTranslator = () => {
   // ——— Kuromoji トークナイザー初期化（改善版） ———
   useEffect(() => {
     const initializeTokenizer = async () => {
-      // 初期状態を文字モードとして設定
-      setIsTokenizerReady(true);
-      setIsBunsetsuMode(false);
-      
       try {
-        // Kuromojiの存在確認
+        setKuromojiStatus('initializing');
+        
         if (typeof window.kuromoji === 'undefined') {
-          console.log('Kuromoji not loaded - using character mode');
-          setKuromojiError('Kuromojiライブラリが読み込まれていません');
+          console.error('Kuromoji library not loaded');
+          setKuromojiStatus('error');
+          setIsTokenizerReady(true);
           return;
         }
 
-        // 複数のCDNから試行
-        const cdnUrls = [
-          'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/',
-          'https://unpkg.com/kuromoji@0.1.2/dict/',
-          'https://cdnjs.cloudflare.com/ajax/libs/kuromoji/0.1.2/dict/'
+        // 複数の辞書パスを試行
+        const dictPaths = [
+          './dict/',                                    // ローカル（publicフォルダ）
+          '/dict/',                                     // ルート相対
+          './kuromoji/dict/',                          // kuromoji フォルダ内
+          'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/', // CDN
         ];
 
         let tokenizer = null;
-        let lastError = null;
+        let successPath = null;
 
-        for (const dicPath of cdnUrls) {
+        for (const dicPath of dictPaths) {
           try {
-            console.log(`Trying Kuromoji with dict path: ${dicPath}`);
+            console.log(`Trying kuromoji with: ${dicPath}`);
             
             tokenizer = await new Promise((resolve, reject) => {
               const timeoutId = setTimeout(() => {
-                reject(new Error('Kuromoji initialization timeout (10s)'));
-              }, 10000); // 10秒タイムアウト
+                reject(new Error('Timeout'));
+              }, 5000); // 5秒タイムアウト
 
               window.kuromoji.builder({ dicPath }).build((err, result) => {
                 clearTimeout(timeoutId);
@@ -122,26 +121,27 @@ const ScribbleTranslator = () => {
             });
 
             if (tokenizer) {
-              console.log('Kuromoji initialized successfully');
-              tokenizerRef.current = tokenizer;
-              setKuromojiError('');
-              // 成功したら文節モードを有効化可能にする
+              successPath = dicPath;
               break;
             }
           } catch (err) {
-            console.error(`Kuromoji init failed with ${dicPath}:`, err);
-            lastError = err;
+            console.warn(`Failed with ${dicPath}:`, err.message);
           }
         }
 
-        if (!tokenizer) {
-          throw lastError || new Error('All CDN attempts failed');
+        if (tokenizer) {
+          console.log(`Kuromoji initialized successfully with: ${successPath}`);
+          tokenizerRef.current = tokenizer;
+          setKuromojiStatus('ready');
+          setIsTokenizerReady(true);
+        } else {
+          throw new Error('All dictionary paths failed');
         }
 
       } catch (error) {
         console.error('Kuromoji initialization error:', error);
-        setKuromojiError(`AI文節認識の初期化に失敗: ${error.message}`);
-        // エラー時も文字モードは使用可能
+        setKuromojiStatus('error');
+        setIsTokenizerReady(true);
       }
     };
 
@@ -150,7 +150,7 @@ const ScribbleTranslator = () => {
 
   // ——— AI 文節分割ロジック ———
   const analyzeBunsetsuWithAI = useCallback((text) => {
-    if (!tokenizerRef.current || !isBunsetsuMode) {
+    if (!tokenizerRef.current || !isBunsetsuMode || kuromojiStatus !== 'ready') {
       return text.split('').map((char, idx) => ({
         indices: [idx],
         text: char,
@@ -158,6 +158,7 @@ const ScribbleTranslator = () => {
         end: idx,
       }));
     }
+    
     try {
       const tokens = tokenizerRef.current.tokenize(text);
       const groups = [];
@@ -179,6 +180,7 @@ const ScribbleTranslator = () => {
           token.pos_detail_1 === '句点' ||
           token.pos_detail_1 === '読点'
         );
+        
         if (!shouldSplit && tokenIndex < tokens.length - 1) {
           const next = tokens[tokenIndex + 1];
           if ((token.pos === '動詞' || token.pos === '形容詞') &&
@@ -216,7 +218,7 @@ const ScribbleTranslator = () => {
         end: idx,
       }));
     }
-  }, [isBunsetsuMode]);
+  }, [isBunsetsuMode, kuromojiStatus]);
 
   // ─── 音声認識の初期化 ───
   useEffect(() => {
@@ -324,7 +326,7 @@ const ScribbleTranslator = () => {
         const ax = p.x + rect.left, ay = p.y + rect.top;
         return Math.hypot(ax-cx, ay-cy) < Math.max(r.width,r.height)*0.7;
       })) {
-        if (isBunsetsuMode && tokenizerRef.current) {
+        if (isBunsetsuMode && kuromojiStatus === 'ready') {
           const g = bunsetsuGroups.find(g => g.indices.includes(idx));
           g?.indices.forEach(i => hits.add(i));
         } else {
@@ -339,7 +341,7 @@ const ScribbleTranslator = () => {
     }
     setCurrentPath([]);
     updateConfirmButtonPosition();
-  }, [isDrawing, currentPath, bunsetsuGroups, isBunsetsuMode]);
+  }, [isDrawing, currentPath, bunsetsuGroups, isBunsetsuMode, kuromojiStatus]);
 
   // ——— 確認ボタン位置計算 ———
   const updateConfirmButtonPosition = useCallback(() => {
@@ -371,10 +373,6 @@ const ScribbleTranslator = () => {
 
   // ——— 文節モード切替 ———
   const toggleBunsetsuMode = () => {
-    if (!tokenizerRef.current) {
-      alert('AI文節認識が初期化されていません。文字モードで使用してください。');
-      return;
-    }
     setIsBunsetsuMode(m => !m);
     cancelSelection();
   };
@@ -427,7 +425,7 @@ const ScribbleTranslator = () => {
       backgroundColor: isBunsetsuMode ? '#10b981' : '#6b7280',
       color: 'white', transition: 'all 0.2s',
       display: 'flex', alignItems: 'center', gap: '6px',
-      opacity: tokenizerRef.current ? 1 : 0.6
+      opacity: kuromojiStatus === 'ready' ? 1 : 0.6
     },
     main: { flex: 1, padding: '32px', maxWidth: '1200px', margin: '0 auto', width: '100%' },
     textContainer: {
@@ -494,8 +492,10 @@ const ScribbleTranslator = () => {
     aiStatus: {
       display:'inline-flex', alignItems:'center', gap:'6px',
       padding:'4px 12px', borderRadius:'16px',
-      backgroundColor: kuromojiError ? '#fee2e2' : (tokenizerRef.current ? '#d1fae5' : '#fef3c7'),
-      color: kuromojiError ? '#991b1b' : (tokenizerRef.current ? '#065f46' : '#92400e'),
+      backgroundColor: kuromojiStatus === 'ready' ? '#d1fae5' : 
+                      kuromojiStatus === 'error' ? '#fee2e2' : '#fef3c7',
+      color: kuromojiStatus === 'ready' ? '#065f46' : 
+             kuromojiStatus === 'error' ? '#991b1b' : '#92400e',
       fontSize:'12px', fontWeight:500
     }
   };
@@ -506,10 +506,26 @@ const ScribbleTranslator = () => {
     if (!isSelectionMode) setIsSelectionMode(true);
     setSelectedChars(prev => {
       const s = new Set(prev);
-      s.has(idx) ? s.delete(idx) : s.add(idx);
+      if (s.has(idx)) {
+        s.delete(idx);
+      } else {
+        if (isBunsetsuMode && kuromojiStatus === 'ready') {
+          const g = bunsetsuGroups.find(g => g.indices.includes(idx));
+          if (g) {
+            const allSelected = g.indices.every(i => s.has(i));
+            if (allSelected) {
+              g.indices.forEach(i => s.delete(i));
+            } else {
+              g.indices.forEach(i => s.add(i));
+            }
+          }
+        } else {
+          s.add(idx);
+        }
+      }
       return s;
     });
-  }, [isSelectionMode]);
+  }, [isSelectionMode, isBunsetsuMode, bunsetsuGroups, kuromojiStatus]);
 
   return (
     <div style={styles.container}>
@@ -528,13 +544,14 @@ const ScribbleTranslator = () => {
           }
           {isTranslating && <span style={{ color:'#10b981',marginLeft:16,fontWeight:500 }}>🔄 翻訳処理中…</span>}
           <span style={{ ...styles.aiStatus, marginLeft:16 }}>
-            {kuromojiError ? '⚠️ 文字モードで動作中' : 
-             tokenizerRef.current ? '🤖 AI文節認識: 有効' : 
-             '📝 文字モードで動作中'}
+            {kuromojiStatus === 'ready' ? '🤖 AI文節認識: 有効' : 
+             kuromojiStatus === 'error' ? '⚠️ 文字モードで動作中' : 
+             '⏳ AI初期化中...'}
           </span>
         </div>
         <div style={styles.toolbarButtons}>
-          <button onClick={toggleBunsetsuMode} style={styles.bunsetsuToggle} disabled={!tokenizerRef.current}>
+          <button onClick={toggleBunsetsuMode} style={styles.bunsetsuToggle} 
+                  disabled={kuromojiStatus !== 'ready'}>
             {isBunsetsuMode ? '📖 文節モード' : '📝 文字モード'}
           </button>
           <button onClick={toggleVoiceInput} style={styles.voiceButton}>
@@ -561,7 +578,7 @@ const ScribbleTranslator = () => {
                       ...(isSelectionMode && !selectedChars.has(i)
                         ? { cursor:'pointer', padding:'2px 1px' }
                         : {}),
-                      ...(isBunsetsuEnd(i) && !isSelectionMode && isBunsetsuMode && tokenizerRef.current
+                      ...(isBunsetsuEnd(i) && !isSelectionMode && isBunsetsuMode && kuromojiStatus === 'ready'
                         ? styles.bunsetsuBorder
                         : {})
                     }}
@@ -639,7 +656,7 @@ const ScribbleTranslator = () => {
           )}
         </div>
 
-        {isBunsetsuMode && bunsetsuGroups.length > 0 && tokenizerRef.current && (
+        {isBunsetsuMode && bunsetsuGroups.length > 0 && kuromojiStatus === 'ready' && (
           <div style={{
             marginTop:'16px', padding:'16px',
             backgroundColor:'#f0fdf4', borderRadius:'8px',
@@ -659,14 +676,16 @@ const ScribbleTranslator = () => {
           </div>
         )}
 
-        {kuromojiError && (
+        {kuromojiStatus === 'error' && (
           <div style={{
             marginTop:'16px', padding:'16px',
             backgroundColor:'#fef2f2', borderRadius:'8px',
             fontSize:'14px', color:'#991b1b',
             border:'1px solid #fecaca'
           }}>
-            <strong>⚠️ 注意:</strong> {kuromojiError}
+            <strong>⚠️ 注意:</strong> AI文節認識の初期化に失敗しました。文字モードで動作しています。
+            <br />
+            <small>詳細: 辞書ファイルの読み込みに失敗しました。開発者ツールのコンソールを確認してください。</small>
           </div>
         )}
 
