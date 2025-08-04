@@ -28,6 +28,7 @@ const ScribbleTranslator = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
   const [selectedText, setSelectedText] = useState('');
+  const [isDrawing, setIsDrawing] = useState(false);
 
   const targetLanguages = [
     { code: 'en', name: '英語', flag: '🇺🇸' },
@@ -98,7 +99,14 @@ const ScribbleTranslator = () => {
 
   // 個別文字のクリックハンドラ（選択/解除）
   const handleCharClick = useCallback((index, e) => {
+    e.preventDefault();
     e.stopPropagation();
+    
+    // ドラッグ中は無視
+    if (isDrawing) {
+      return;
+    }
+    
     console.log(`Character ${index} clicked, currently selected: ${selectedChars.has(index)}`);
     
     setSelectedChars(prev => {
@@ -122,7 +130,7 @@ const ScribbleTranslator = () => {
       
       return newSet;
     });
-  }, [selectedChars]);
+  }, [selectedChars, isDrawing]);
 
   const getMousePos = useCallback((e) => {
     if (!overlayRef.current) return { x: 0, y: 0 };
@@ -135,6 +143,7 @@ const ScribbleTranslator = () => {
 
   const startDrawing = useCallback((e) => {
     e.preventDefault();
+    setIsDrawing(true);
     setIsSelectionMode(false);
     setSelectedChars(new Set());
     setConfirmButtons(null);
@@ -143,12 +152,15 @@ const ScribbleTranslator = () => {
   }, [getMousePos]);
 
   const draw = useCallback((e) => {
-    if (!currentPath.length) return;
+    if (!isDrawing || !currentPath.length) return;
     e.preventDefault();
     setCurrentPath(prev => [...prev, getMousePos(e)]);
-  }, [currentPath, getMousePos]);
+  }, [currentPath, getMousePos, isDrawing]);
 
   const stopDrawing = useCallback(() => {
+    if (!isDrawing) return;
+    setIsDrawing(false);
+    
     if (!currentPath.length) return setCurrentPath([]);
 
     const overlay = overlayRef.current;
@@ -176,7 +188,7 @@ const ScribbleTranslator = () => {
     }
 
     setCurrentPath([]);
-  }, [currentPath, textChars]);
+  }, [currentPath, textChars, isDrawing]);
 
   const handleTranslate = useCallback(async () => {
     if (!selectedText.trim() || isTranslating) return;
@@ -286,7 +298,7 @@ const ScribbleTranslator = () => {
     },
     textArea: {
       position: 'relative',
-      zIndex: 15,  // overlayより上に配置
+      zIndex: 20,  // overlayより上に配置
       userSelect: 'none',
       fontSize: '24px',
       lineHeight: '1.8',
@@ -296,9 +308,10 @@ const ScribbleTranslator = () => {
       display: 'inline-block',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       borderRadius: '4px',
-      cursor: 'pointer',  // 常にポインターカーソル
+      cursor: 'pointer',
       position: 'relative',
-      zIndex: 15
+      zIndex: 25,  // 確実にoverlayより上
+      padding: '2px 4px'
     },
     selectedChar: {
       backgroundColor: '#E3F2FD',
@@ -447,6 +460,7 @@ const ScribbleTranslator = () => {
                 key={c.id} 
                 className="char-span"
                 onClick={(e) => handleCharClick(i, e)}
+                onMouseDown={(e) => e.stopPropagation()}
                 style={{
                   ...styles.charSpan,
                   ...(selectedChars.has(i) ? styles.selectedChar : {})
@@ -467,6 +481,7 @@ const ScribbleTranslator = () => {
             onMouseDown={!isSelectionMode ? startDrawing : undefined}
             onMouseMove={!isSelectionMode ? draw : undefined}
             onMouseUp={!isSelectionMode ? stopDrawing : undefined}
+            onMouseLeave={!isSelectionMode ? stopDrawing : undefined}
             onTouchStart={!isSelectionMode ? startDrawing : undefined}
             onTouchMove={!isSelectionMode ? draw : undefined}
             onTouchEnd={!isSelectionMode ? stopDrawing : undefined}
