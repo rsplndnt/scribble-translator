@@ -34,11 +34,7 @@ const ScribbleTranslator = () => {
     { code: 'en', name: '英語', flag: '🇺🇸' },
     { code: 'ko', name: '韓国語', flag: '🇰🇷' },
     { code: 'zh', name: '中国語', flag: '🇨🇳' },
-    { code: 'es', name: 'スペイン語', flag: '🇪🇸' },
-    { code: 'fr', name: 'フランス語', flag: '🇫🇷' },
-  ];
-
-  // 簡易的な文節分割（助詞や接続詞で区切る）
+  ];  // 簡易的な文節分割（助詞や接続詞で区切る）
   const analyzeBunsetsu = (text) => {
     // 文節の区切りとなる文字パターン
     const particles = ['は', 'が', 'を', 'に', 'で', 'へ', 'と', 'から', 'まで', 'より', 'の'];
