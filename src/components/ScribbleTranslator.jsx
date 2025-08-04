@@ -42,11 +42,13 @@ const ScribbleTranslator = () => {
   ];
 
   useEffect(() => {
+    // initialTextを1文字ずつ分割し、charとidを持つオブジェクト配列にする
+    const chars = Array.from(initialText).map((char, idx) => ({
       char, 
       id: `char-${idx}` 
     }));
     setTextChars(chars);
-
+  }, [initialText]);
 
   const getMousePos = useCallback((e) => {
     if (!overlayRef.current) return { x: 0, y: 0 };
