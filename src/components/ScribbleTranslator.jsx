@@ -35,8 +35,9 @@ const ScribbleTranslator = () => {
   const [recognition, setRecognition]       = useState(null);
   const [currentText, setCurrentText]       = useState(initialText);
   const [isTokenizerReady, setIsTokenizerReady] = useState(false);
-  const [isBunsetsuMode, setIsBunsetsuMode] = useState(true);
+  const [isBunsetsuMode, setIsBunsetsuMode] = useState(false); // デフォルトを文字モードに変更
   const [isDrawing, setIsDrawing]           = useState(false);
+  const [kuromojiError, setKuromojiError]   = useState('');
 
   const targetLanguages = [
     { code: 'en', name: '英語',   flag: '🇺🇸' },
@@ -76,31 +77,74 @@ const ScribbleTranslator = () => {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [selectedChars, handleDelete]);
 
-  // ——— Kuromoji トークナイザー初期化 ———
+  // ——— Kuromoji トークナイザー初期化（改善版） ———
   useEffect(() => {
     const initializeTokenizer = async () => {
+      // 初期状態を文字モードとして設定
+      setIsTokenizerReady(true);
+      setIsBunsetsuMode(false);
+      
       try {
-        if (typeof window.kuromoji !== 'undefined') {
-          const dicPath = 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/';
-          window.kuromoji.builder({ dicPath }).build((err, tokenizer) => {
-            if (err) {
-              console.error('Kuromoji init error:', err);
-              setIsBunsetsuMode(false);
-              setIsTokenizerReady(true);
-              return;
-            }
-            tokenizerRef.current = tokenizer;
-            setIsTokenizerReady(true);
-          });
-        } else {
-          setIsBunsetsuMode(false);
-          setIsTokenizerReady(true);
+        // Kuromojiの存在確認
+        if (typeof window.kuromoji === 'undefined') {
+          console.log('Kuromoji not loaded - using character mode');
+          setKuromojiError('Kuromojiライブラリが読み込まれていません');
+          return;
         }
-      } catch {
-        setIsBunsetsuMode(false);
-        setIsTokenizerReady(true); 
+
+        // 複数のCDNから試行
+        const cdnUrls = [
+          'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/',
+          'https://unpkg.com/kuromoji@0.1.2/dict/',
+          'https://cdnjs.cloudflare.com/ajax/libs/kuromoji/0.1.2/dict/'
+        ];
+
+        let tokenizer = null;
+        let lastError = null;
+
+        for (const dicPath of cdnUrls) {
+          try {
+            console.log(`Trying Kuromoji with dict path: ${dicPath}`);
+            
+            tokenizer = await new Promise((resolve, reject) => {
+              const timeoutId = setTimeout(() => {
+                reject(new Error('Kuromoji initialization timeout (10s)'));
+              }, 10000); // 10秒タイムアウト
+
+              window.kuromoji.builder({ dicPath }).build((err, result) => {
+                clearTimeout(timeoutId);
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(result);
+                }
+              });
+            });
+
+            if (tokenizer) {
+              console.log('Kuromoji initialized successfully');
+              tokenizerRef.current = tokenizer;
+              setKuromojiError('');
+              // 成功したら文節モードを有効化可能にする
+              break;
+            }
+          } catch (err) {
+            console.error(`Kuromoji init failed with ${dicPath}:`, err);
+            lastError = err;
+          }
+        }
+
+        if (!tokenizer) {
+          throw lastError || new Error('All CDN attempts failed');
+        }
+
+      } catch (error) {
+        console.error('Kuromoji initialization error:', error);
+        setKuromojiError(`AI文節認識の初期化に失敗: ${error.message}`);
+        // エラー時も文字モードは使用可能
       }
     };
+
     initializeTokenizer();
   }, []);
 
@@ -163,7 +207,8 @@ const ScribbleTranslator = () => {
       });
 
       return groups;
-    } catch {
+    } catch (error) {
+      console.error('Bunsetsu analysis error:', error);
       return text.split('').map((char, idx) => ({
         indices: [idx],
         text: char,
@@ -173,37 +218,34 @@ const ScribbleTranslator = () => {
     }
   }, [isBunsetsuMode]);
 
- // ─── 音声認識の初期化 ───
-useEffect(() => {
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const rec = new SpeechRecognition();
+  // ─── 音声認識の初期化 ───
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const rec = new SpeechRecognition();
 
-    rec.lang = 'ja-JP';
-    rec.interimResults = true;   // interim（仮結果）は受け取るけど表示しない
-    rec.continuous    = true;
+      rec.lang = 'ja-JP';
+      rec.interimResults = true;
+      rec.continuous    = true;
 
-    rec.onresult = (e) => {
-      let finalTranscript = '';
-      // resultIndex 以降の中で isFinal=true のものだけ合計する
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) {
-          finalTranscript += e.results[i][0].transcript;
+      rec.onresult = (e) => {
+        let finalTranscript = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) {
+            finalTranscript += e.results[i][0].transcript;
+          }
         }
-      }
-      if (finalTranscript) {
-        // 「確定」の分だけ現在のテキストに追加
-        setCurrentText(prev => prev + finalTranscript);
-      }
-    };
+        if (finalTranscript) {
+          setCurrentText(prev => prev + finalTranscript);
+        }
+      };
 
-    rec.onerror = () => setIsListening(false);
-    rec.onend   = () => setIsListening(false);
+      rec.onerror = () => setIsListening(false);
+      rec.onend   = () => setIsListening(false);
 
-    setRecognition(rec);
-  }
-}, []);
-
+      setRecognition(rec);
+    }
+  }, []);
 
   const toggleVoiceInput = useCallback(() => {
     if (!recognition) {
@@ -282,7 +324,7 @@ useEffect(() => {
         const ax = p.x + rect.left, ay = p.y + rect.top;
         return Math.hypot(ax-cx, ay-cy) < Math.max(r.width,r.height)*0.7;
       })) {
-        if (isBunsetsuMode) {
+        if (isBunsetsuMode && tokenizerRef.current) {
           const g = bunsetsuGroups.find(g => g.indices.includes(idx));
           g?.indices.forEach(i => hits.add(i));
         } else {
@@ -329,6 +371,10 @@ useEffect(() => {
 
   // ——— 文節モード切替 ———
   const toggleBunsetsuMode = () => {
+    if (!tokenizerRef.current) {
+      alert('AI文節認識が初期化されていません。文字モードで使用してください。');
+      return;
+    }
     setIsBunsetsuMode(m => !m);
     cancelSelection();
   };
@@ -380,7 +426,8 @@ useEffect(() => {
       fontSize: '14px', fontWeight: 500, cursor: 'pointer',
       backgroundColor: isBunsetsuMode ? '#10b981' : '#6b7280',
       color: 'white', transition: 'all 0.2s',
-      display: 'flex', alignItems: 'center', gap: '6px'
+      display: 'flex', alignItems: 'center', gap: '6px',
+      opacity: tokenizerRef.current ? 1 : 0.6
     },
     main: { flex: 1, padding: '32px', maxWidth: '1200px', margin: '0 auto', width: '100%' },
     textContainer: {
@@ -447,8 +494,8 @@ useEffect(() => {
     aiStatus: {
       display:'inline-flex', alignItems:'center', gap:'6px',
       padding:'4px 12px', borderRadius:'16px',
-      backgroundColor:isTokenizerReady ? '#d1fae5':'#fee2e2',
-      color:isTokenizerReady ? '#065f46':'#991b1b',
+      backgroundColor: kuromojiError ? '#fee2e2' : (tokenizerRef.current ? '#d1fae5' : '#fef3c7'),
+      color: kuromojiError ? '#991b1b' : (tokenizerRef.current ? '#065f46' : '#92400e'),
       fontSize:'12px', fontWeight:500
     }
   };
@@ -481,11 +528,13 @@ useEffect(() => {
           }
           {isTranslating && <span style={{ color:'#10b981',marginLeft:16,fontWeight:500 }}>🔄 翻訳処理中…</span>}
           <span style={{ ...styles.aiStatus, marginLeft:16 }}>
-            {isTokenizerReady ? '🤖 AI文節認識: 有効' : '⏳ AI初期化中…'}
+            {kuromojiError ? '⚠️ 文字モードで動作中' : 
+             tokenizerRef.current ? '🤖 AI文節認識: 有効' : 
+             '📝 文字モードで動作中'}
           </span>
         </div>
         <div style={styles.toolbarButtons}>
-          <button onClick={toggleBunsetsuMode} style={styles.bunsetsuToggle} disabled={!isTokenizerReady}>
+          <button onClick={toggleBunsetsuMode} style={styles.bunsetsuToggle} disabled={!tokenizerRef.current}>
             {isBunsetsuMode ? '📖 文節モード' : '📝 文字モード'}
           </button>
           <button onClick={toggleVoiceInput} style={styles.voiceButton}>
@@ -512,7 +561,7 @@ useEffect(() => {
                       ...(isSelectionMode && !selectedChars.has(i)
                         ? { cursor:'pointer', padding:'2px 1px' }
                         : {}),
-                      ...(isBunsetsuEnd(i) && !isSelectionMode && isBunsetsuMode
+                      ...(isBunsetsuEnd(i) && !isSelectionMode && isBunsetsuMode && tokenizerRef.current
                         ? styles.bunsetsuBorder
                         : {})
                     }}
@@ -590,7 +639,7 @@ useEffect(() => {
           )}
         </div>
 
-        {isBunsetsuMode && bunsetsuGroups.length > 0 && isTokenizerReady && (
+        {isBunsetsuMode && bunsetsuGroups.length > 0 && tokenizerRef.current && (
           <div style={{
             marginTop:'16px', padding:'16px',
             backgroundColor:'#f0fdf4', borderRadius:'8px',
@@ -607,6 +656,17 @@ useEffect(() => {
                 {g.text}
               </span>
             ))}
+          </div>
+        )}
+
+        {kuromojiError && (
+          <div style={{
+            marginTop:'16px', padding:'16px',
+            backgroundColor:'#fef2f2', borderRadius:'8px',
+            fontSize:'14px', color:'#991b1b',
+            border:'1px solid #fecaca'
+          }}>
+            <strong>⚠️ 注意:</strong> {kuromojiError}
           </div>
         )}
 
