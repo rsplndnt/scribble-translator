@@ -13,6 +13,19 @@ const translateWithMyMemory = async (text, targetLang) => {
   }
 };
 
+// 折り返し翻訳用（他言語→日本語）
+const translateToJapanese = async (text, sourceLang) => {
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLang}|ja`;
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.responseData.translatedText;
+  } catch (error) {
+    console.error('Back translation error:', error);
+    return '翻訳エラー';
+  }
+};
+
 const ScribbleTranslator = () => {
   // ——— ① State/Ref フック群 ———
   const containerRef   = useRef(null);
@@ -29,6 +42,9 @@ const ScribbleTranslator = () => {
   const [translations, setTranslations]     = useState({});
   const [isTranslating, setIsTranslating]   = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
+  const [backTranslations, setBackTranslations] = useState({});
+  const [isBackTranslating, setIsBackTranslating] = useState(false);
+  const [showBackTranslations, setShowBackTranslations] = useState(false);
   const [selectedText, setSelectedText]     = useState('');
   const [bunsetsuGroups, setBunsetsuGroups] = useState([]);
   const [isListening, setIsListening]       = useState(false);
@@ -53,6 +69,8 @@ const ScribbleTranslator = () => {
     setShowTranslations(false);
     setSelectedText('');
     setTranslations({});
+    setBackTranslations({});
+    setShowBackTranslations(false);
   }, []);
 
   // ——— 削除処理ハンドラ ———
@@ -363,6 +381,8 @@ const ScribbleTranslator = () => {
     if (!selectedText.trim() || isTranslating) return;
     setIsTranslating(true);
     setShowTranslations(true);
+    setShowBackTranslations(false);
+    setBackTranslations({});
     const results = {};
     for (const lang of targetLanguages) {
       results[lang.code] = await translateWithMyMemory(selectedText.trim(), lang.code);
@@ -370,6 +390,24 @@ const ScribbleTranslator = () => {
     setTranslations(results);
     setIsTranslating(false);
   }, [selectedText, isTranslating]);
+
+  // ——— 折り返し翻訳実行 ———
+  const handleBackTranslate = useCallback(async () => {
+    if (isBackTranslating) return;
+    setIsBackTranslating(true);
+    setShowBackTranslations(true);
+    const results = {};
+    
+    for (const lang of targetLanguages) {
+      if (translations[lang.code]) {
+        // 各言語から日本語に翻訳
+        results[lang.code] = await translateToJapanese(translations[lang.code], lang.code);
+      }
+    }
+    
+    setBackTranslations(results);
+    setIsBackTranslating(false);
+  }, [translations, isBackTranslating]);
 
   // ——— 文節モード切替 ———
   const toggleBunsetsuMode = () => {
@@ -422,10 +460,28 @@ const ScribbleTranslator = () => {
     bunsetsuToggle: {
       padding: '8px 16px', border: 'none', borderRadius: '6px',
       fontSize: '14px', fontWeight: 500, cursor: 'pointer',
-      backgroundColor: isBunsetsuMode ? '#10b981' : '#6b7280',
-      color: 'white', transition: 'all 0.2s',
-      display: 'flex', alignItems: 'center', gap: '6px',
-      opacity: kuromojiStatus === 'ready' ? 1 : 0.6
+      backgroundColor: 'transparent',
+      color: '#3A3E40',
+      transition: 'all 0.2s',
+      display: 'flex', alignItems: 'center', gap: '12px',
+      opacity: kuromojiStatus === 'ready' ? 1 : 0.6,
+    },
+    toggleSwitch: {
+      position: 'relative',
+      width: '40px', height: '22px',
+      backgroundColor: isBunsetsuMode ? '#10b981' : '#e5e7eb',
+      borderRadius: '11px',
+      transition: 'all 0.2s',
+      cursor: 'pointer'
+    },
+    toggleKnob: {
+      position: 'absolute', top: '2px',
+      left: isBunsetsuMode ? '20px' : '2px',
+      width: '18px', height: '18px',
+      backgroundColor: 'white',
+      borderRadius: '50%',
+      transition: 'all 0.2s',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
     },
     main: { flex: 1, padding: '32px', maxWidth: '1200px', margin: '0 auto', width: '100%' },
     textContainer: {
@@ -497,6 +553,23 @@ const ScribbleTranslator = () => {
       color: kuromojiStatus === 'ready' ? '#065f46' : 
              kuromojiStatus === 'error' ? '#991b1b' : '#92400e',
       fontSize:'12px', fontWeight:500
+    },
+    backTranslateButton: {
+      padding: '12px 24px', border: 'none', borderRadius: '8px',
+      fontSize: '16px', fontWeight: 600, cursor: 'pointer',
+      backgroundColor: '#8b5cf6', color: 'white',
+      transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(139,92,246,0.3)',
+      display: 'flex', alignItems: 'center', gap: '8px',
+      margin: '24px auto 0', justifyContent: 'center'
+    },
+    backTranslationBox: {
+      backgroundColor: '#f3f4f6', padding: '20px',
+      borderRadius: '10px', marginTop: '24px',
+      border: '1px solid #d1d5db'
+    },
+    backTranslationTitle: {
+      fontSize: '18px', fontWeight: 600, color: '#4b5563',
+      marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px'
     }
   };
 
@@ -552,7 +625,10 @@ const ScribbleTranslator = () => {
         <div style={styles.toolbarButtons}>
           <button onClick={toggleBunsetsuMode} style={styles.bunsetsuToggle} 
                   disabled={kuromojiStatus !== 'ready'}>
-            {isBunsetsuMode ? '📖 文節モード' : '📝 文字モード'}
+            文節モード
+            <span style={styles.toggleSwitch}>
+              <span style={styles.toggleKnob}></span>
+            </span>
           </button>
           <button onClick={toggleVoiceInput} style={styles.voiceButton}>
             {isListening ? <>⏹️ 音声入力停止</> : <>🎤 音声入力</>}
@@ -715,6 +791,49 @@ const ScribbleTranslator = () => {
                 </div>
               ))}
             </div>
+            
+            {/* 折り返し翻訳ボタン */}
+            {!isTranslating && Object.keys(translations).length > 0 && (
+              <button 
+                onClick={handleBackTranslate} 
+                disabled={isBackTranslating}
+                style={{
+                  ...styles.backTranslateButton,
+                  opacity: isBackTranslating ? 0.7 : 1,
+                  transform: isBackTranslating ? 'scale(0.95)' : 'scale(1)'
+                }}
+              >
+                {isBackTranslating ? '🔄 折り返し翻訳中…' : '🔁 折り返し翻訳'}
+              </button>
+            )}
+            
+            {/* 折り返し翻訳結果 */}
+            {showBackTranslations && (
+              <div style={styles.backTranslationBox}>
+                <h4 style={styles.backTranslationTitle}>
+                  🔁 折り返し翻訳結果（各言語→日本語）
+                </h4>
+                <div style={styles.translationGrid}>
+                  {targetLanguages.map(lang => (
+                    <div key={lang.code} style={styles.translationCard}>
+                      <div style={styles.flagName}>
+                        <span style={styles.flag}>{lang.flag}</span>
+                        <span style={styles.langName}>{lang.name}→日本語</span>
+                      </div>
+                      <div style={{
+                        ...styles.translatedText,
+                        ...(isBackTranslating ? styles.loadingText : {})
+                      }}>
+                        {isBackTranslating
+                          ? '🔄 翻訳中…'
+                          : backTranslations[lang.code] || '❌ 翻訳エラー'
+                        }
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
