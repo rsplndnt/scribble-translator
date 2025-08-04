@@ -28,6 +28,7 @@ const ScribbleTranslator = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
   const [selectedText, setSelectedText] = useState('');
+  const [bunsetsuGroups, setBunsetsuGroups] = useState([]);
 
   const targetLanguages = [
     { code: 'en', name: '英語', flag: '🇺🇸' },
@@ -37,12 +38,75 @@ const ScribbleTranslator = () => {
     { code: 'fr', name: 'フランス語', flag: '🇫🇷' },
   ];
 
+  // 簡易的な文節分割（助詞や接続詞で区切る）
+  const analyzeBunsetsu = (text) => {
+    // 文節の区切りとなる文字パターン
+    const particles = ['は', 'が', 'を', 'に', 'で', 'へ', 'と', 'から', 'まで', 'より', 'の'];
+    const punctuations = ['、', '。', '！', '？', '・'];
+    
+    const groups = [];
+    let currentGroup = [];
+    let startIndex = 0;
+    
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      currentGroup.push(i);
+      
+      // 助詞または句読点の後で区切る
+      if (particles.includes(char) || punctuations.includes(char)) {
+        groups.push({
+          indices: [...currentGroup],
+          text: text.slice(startIndex, i + 1),
+          start: startIndex,
+          end: i
+        });
+        currentGroup = [];
+        startIndex = i + 1;
+      }
+      // 漢字からひらがなへの変化でも区切る（簡易版）
+      else if (i < text.length - 1) {
+        const currentCharType = /[\u4e00-\u9faf]/.test(char) ? 'kanji' : 'other';
+        const nextCharType = /[\u4e00-\u9faf]/.test(text[i + 1]) ? 'kanji' : 'other';
+        const nextIsHiragana = /[\u3040-\u309f]/.test(text[i + 1]);
+        
+        if (currentCharType === 'kanji' && nextIsHiragana && !particles.includes(text[i + 1])) {
+          // 漢字の後にひらがなが来る場合（助詞以外）
+          let j = i + 1;
+          while (j < text.length && /[\u3040-\u309f]/.test(text[j]) && !particles.includes(text[j])) {
+            currentGroup.push(j);
+            j++;
+          }
+          if (j > i + 1) {
+            i = j - 1;
+          }
+        }
+      }
+    }
+    
+    // 残りの文字をグループに追加
+    if (currentGroup.length > 0) {
+      groups.push({
+        indices: currentGroup,
+        text: text.slice(startIndex),
+        start: startIndex,
+        end: text.length - 1
+      });
+    }
+    
+    return groups;
+  };
+
   useEffect(() => {
     const chars = initialText.split('').map((char, idx) => ({ 
       char, 
       id: `char-${idx}` 
     }));
     setTextChars(chars);
+    
+    // 文節グループを解析
+    const groups = analyzeBunsetsu(initialText);
+    setBunsetsuGroups(groups);
+    console.log('文節グループ:', groups.map(g => g.text));
   }, [initialText]);
 
   // 選択文字の更新時に選択テキストを更新
@@ -95,36 +159,75 @@ const ScribbleTranslator = () => {
     }
   };
 
-  // 個別文字のクリックハンドラ（選択/解除）- 参考コードのtoggleCharSelectionと同様の実装
-  const toggleCharSelection = useCallback((index, e) => {
+  // 文節単位でのトグル
+  const toggleBunsetsuSelection = useCallback((groupIndex, e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (e && e.stopPropagation) e.stopPropagation();
     
-    // 選択モードでない場合は、選択モードをONにする
     if (!isSelectionMode) {
       setIsSelectionMode(true);
     }
     
-    console.log(`Character ${index} clicked, currently selected: ${selectedChars.has(index)}`);
+    const group = bunsetsuGroups[groupIndex];
+    if (!group) return;
     
     const newSelected = new Set(selectedChars);
-    if (newSelected.has(index)) {
-      newSelected.delete(index);
-      console.log(`Character ${index} deselected`);
+    const isGroupSelected = group.indices.every(idx => newSelected.has(idx));
+    
+    if (isGroupSelected) {
+      // グループ全体を選択解除
+      group.indices.forEach(idx => newSelected.delete(idx));
+      console.log(`文節 "${group.text}" を選択解除`);
     } else {
-      newSelected.add(index);
-      console.log(`Character ${index} selected`);
+      // グループ全体を選択
+      group.indices.forEach(idx => newSelected.add(idx));
+      console.log(`文節 "${group.text}" を選択`);
     }
     
     setSelectedChars(newSelected);
     
-    // 選択が0になったら選択モードを解除
     if (newSelected.size === 0) {
       setConfirmButtons(null);
       setIsSelectionMode(false);
       setShowTranslations(false);
     }
-  }, [selectedChars, isSelectionMode]);
+  }, [selectedChars, isSelectionMode, bunsetsuGroups]);
+
+  // 個別文字のクリックハンドラ
+  const toggleCharSelection = useCallback((index, e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
+    
+    // どの文節グループに属するか確認
+    const groupIndex = bunsetsuGroups.findIndex(group => 
+      group.indices.includes(index)
+    );
+    
+    if (groupIndex !== -1) {
+      // 文節単位で選択/解除
+      toggleBunsetsuSelection(groupIndex, e);
+    } else {
+      // 文節に属さない場合は個別選択
+      if (!isSelectionMode) {
+        setIsSelectionMode(true);
+      }
+      
+      const newSelected = new Set(selectedChars);
+      if (newSelected.has(index)) {
+        newSelected.delete(index);
+      } else {
+        newSelected.add(index);
+      }
+      
+      setSelectedChars(newSelected);
+      
+      if (newSelected.size === 0) {
+        setConfirmButtons(null);
+        setIsSelectionMode(false);
+        setShowTranslations(false);
+      }
+    }
+  }, [selectedChars, isSelectionMode, bunsetsuGroups, toggleBunsetsuSelection]);
 
   const getMousePos = useCallback((e) => {
     if (!overlayRef.current) return { x: 0, y: 0 };
@@ -168,17 +271,27 @@ const ScribbleTranslator = () => {
         const absY = p.y + overlayRect.top;
         return Math.hypot(absX - cx, absY - cy) < Math.max(rect.width, rect.height) * 0.7;
       });
-      if (hit) hits.push({ idx, cx, cy });
+      if (hit) hits.push(idx);
     });
 
-    const selected = new Set(hits.map(h => h.idx));
-    if (selected.size) {
+    // ヒットした文字が属する文節グループを全て選択
+    const selectedIndices = new Set();
+    hits.forEach(idx => {
+      const group = bunsetsuGroups.find(g => g.indices.includes(idx));
+      if (group) {
+        group.indices.forEach(i => selectedIndices.add(i));
+      } else {
+        selectedIndices.add(idx);
+      }
+    });
+
+    if (selectedIndices.size > 0) {
       setIsSelectionMode(true);
-      setSelectedChars(selected);
+      setSelectedChars(selectedIndices);
     }
 
     setCurrentPath([]);
-  }, [currentPath, textChars]);
+  }, [currentPath, bunsetsuGroups]);
 
   const handleTranslate = useCallback(async () => {
     if (!selectedText.trim() || isTranslating) return;
@@ -211,10 +324,13 @@ const ScribbleTranslator = () => {
 
   const resetText = () => {
     cancelSelection();
-    setTextChars(initialText.split('').map((char, idx) => ({ 
+    const chars = initialText.split('').map((char, idx) => ({ 
       char, 
       id: `char-${idx}` 
-    })));
+    }));
+    setTextChars(chars);
+    const groups = analyzeBunsetsu(initialText);
+    setBunsetsuGroups(groups);
   };
 
   const styles = {
@@ -312,6 +428,11 @@ const ScribbleTranslator = () => {
       transform: 'scale(1.05)',
       boxShadow: '0 2px 8px rgba(9, 111, 202, 0.2)',
       cursor: 'pointer'
+    },
+    bunsetsuBorder: {
+      borderRight: '1px dashed #ccc',
+      paddingRight: '2px',
+      marginRight: '2px'
     },
     overlay: {
       position: 'absolute',
@@ -415,6 +536,11 @@ const ScribbleTranslator = () => {
     }
   };
 
+  // 文字が文節の最後かどうか確認
+  const isBunsetsuEnd = (index) => {
+    return bunsetsuGroups.some(group => group.end === index);
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -426,10 +552,10 @@ const ScribbleTranslator = () => {
         <div style={styles.toolbarInfo}>
           {selectedChars.size > 0 ? (
             <span style={{ color: '#096FCA', fontWeight: '500' }}>
-              ✨ {selectedChars.size}文字選択中: "{selectedText}" | 💡 選択した文字をクリックで解除
+              ✨ {selectedChars.size}文字選択中: "{selectedText}" | 💡 文節単位で選択・解除
             </span>
           ) : (
-            <span>📝 文字数: {textChars.length} | マウスで文字をなぞって選択、または個別クリックで選択</span>
+            <span>📝 文字数: {textChars.length} | マウスで文字をなぞって文節単位で選択</span>
           )}
           {isTranslating && (
             <span style={{ color: '#10b981', marginLeft: '16px', fontWeight: '500' }}>
@@ -458,7 +584,8 @@ const ScribbleTranslator = () => {
                   ...(isSelectionMode && !selectedChars.has(i) ? {
                     cursor: 'pointer',
                     padding: '2px 1px'
-                  } : {})
+                  } : {}),
+                  ...(isBunsetsuEnd(i) && !isSelectionMode ? styles.bunsetsuBorder : {})
                 }}
               >
                 {c.char === ' ' ? '\u00A0' : c.char}
@@ -523,6 +650,27 @@ const ScribbleTranslator = () => {
               </button>
             </div>
           )}
+        </div>
+
+        {/* 文節表示（デバッグ用 - 必要なければ削除可） */}
+        <div style={{ 
+          marginTop: '16px', 
+          padding: '16px', 
+          backgroundColor: '#f3f4f6', 
+          borderRadius: '8px',
+          fontSize: '14px',
+          color: '#6b7280'
+        }}>
+          文節分割: {bunsetsuGroups.map((g, i) => (
+            <span key={i} style={{ 
+              margin: '0 4px',
+              padding: '2px 6px',
+              backgroundColor: '#e5e7eb',
+              borderRadius: '4px'
+            }}>
+              {g.text}
+            </span>
+          ))}
         </div>
 
         {showTranslations && selectedText && (
