@@ -314,48 +314,32 @@ const ScribbleTranslator = () => {
     }
   };
 
-  // 個別文字のクリックハンドラ（選択時は文節単位、解除時は1文字ずつ）
+// 個別文字のクリックハンドラ（シンプル版：1文字ずつ選択/解除）
   const toggleCharSelection = useCallback((index, e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (e && e.stopPropagation) e.stopPropagation();
     
-    const newSelected = new Set(selectedChars);
-    
-    // 既に選択されている文字をクリックした場合は、1文字だけ解除
-    if (newSelected.has(index)) {
-      newSelected.delete(index);
-      console.log(`文字 "${textChars[index]?.char}" を個別に選択解除`);
-      
-      if (newSelected.size === 0) {
-        setConfirmButtons(null);
-        setIsSelectionMode(false);
-        setShowTranslations(false);
-      }
-      
-      setSelectedChars(newSelected);
-      return;
-    }
-    
-    // 選択されていない文字をクリックした場合は、文節単位で選択
     if (!isSelectionMode) {
       setIsSelectionMode(true);
     }
     
-    // どの文節グループに属するか確認
-    const group = bunsetsuGroups.find(g => g.indices.includes(index));
-    
-    if (group) {
-      // 文節全体を選択
-      group.indices.forEach(idx => newSelected.add(idx));
-      console.log(`文節 "${group.text}" を選択`);
+    const newSelected = new Set(selectedChars);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+      console.log(`文字 "${textChars[index]?.char}" を選択解除`);
     } else {
-      // 文節に属さない場合は個別選択
       newSelected.add(index);
-      console.log(`文字 "${textChars[index]?.char}" を個別に選択`);
+      console.log(`文字 "${textChars[index]?.char}" を選択`);
     }
     
     setSelectedChars(newSelected);
-  }, [selectedChars, isSelectionMode, bunsetsuGroups, textChars]);
+    
+    if (newSelected.size === 0) {
+      setConfirmButtons(null);
+      setIsSelectionMode(false);
+      setShowTranslations(false);
+    }
+  }, [selectedChars, isSelectionMode, textChars]);
 
   const getMousePos = useCallback((e) => {
     if (!overlayRef.current) return { x: 0, y: 0 };
