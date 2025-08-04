@@ -1,22 +1,4 @@
-
-AI文節分割の再実装 - Git直接変更コード
-🎯 実装方針
-TensorFlow.jsの軽量モデルを使用した精度の高い文節分割を実現します。
-📝 ターミナルコマンド
-bash# 1. プロジェクトディレクトリに移動
-cd ~/scribble-translator/scribble-translator
-
-# 2. 新しいブランチを作成
-git checkout -b feature/ai-bunsetsu-split
-
-# 3. TensorFlow.jsと日本語処理ライブラリをインストール
-npm install @tensorflow/tfjs kuromoji
-
-# 4. ScribbleTranslator.jsxを直接編集
-cat > src/components/ScribbleTranslator.jsx << 'EOF'
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import * as tf from '@tensorflow/tfjs';
-import kuromoji from 'kuromoji';
 
 // CORS対応の翻訳API
 const translateWithMyMemory = async (text, targetLang) => {
@@ -64,19 +46,23 @@ const ScribbleTranslator = () => {
   useEffect(() => {
     const initializeTokenizer = async () => {
       try {
-        // Kuromojiの辞書ファイルのパスを設定
-        const dicPath = "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/";
-        
-        kuromoji.builder({ dicPath }).build((err, tokenizer) => {
-          if (err) {
-            console.error('Kuromoji initialization error:', err);
-            setIsBunsetsuMode(false); // エラー時は文節モードを無効化
-            return;
-          }
-          tokenizerRef.current = tokenizer;
-          setIsTokenizerReady(true);
-          console.log('形態素解析エンジン初期化完了');
-        });
+        if (typeof window.kuromoji !== 'undefined') {
+          const dicPath = "https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/";
+          
+          window.kuromoji.builder({ dicPath }).build((err, tokenizer) => {
+            if (err) {
+              console.error('Kuromoji initialization error:', err);
+              setIsBunsetsuMode(false);
+              return;
+            }
+            tokenizerRef.current = tokenizer;
+            setIsTokenizerReady(true);
+            console.log('形態素解析エンジン初期化完了');
+          });
+        } else {
+          console.warn('Kuromoji not loaded, falling back to simple mode');
+          setIsBunsetsuMode(false);
+        }
       } catch (error) {
         console.error('Tokenizer initialization failed:', error);
         setIsBunsetsuMode(false);
@@ -89,7 +75,6 @@ const ScribbleTranslator = () => {
   // AI文節分割（形態素解析ベース）
   const analyzeBunsetsuWithAI = useCallback((text) => {
     if (!tokenizerRef.current || !isBunsetsuMode) {
-      // フォールバック：シンプルな文字分割
       return text.split('').map((char, idx) => ({
         indices: [idx],
         text: char,
@@ -99,7 +84,6 @@ const ScribbleTranslator = () => {
     }
 
     try {
-      // Kuromojiで形態素解析
       const tokens = tokenizerRef.current.tokenize(text);
       const groups = [];
       let currentGroup = [];
@@ -111,25 +95,20 @@ const ScribbleTranslator = () => {
         const tokenLength = token.surface_form.length;
         const tokenIndices = Array.from({ length: tokenLength }, (_, i) => charIndex + i);
         
-        // 品詞情報を使った文節判定
         const pos = token.pos;
         const features = token.pos_detail_1;
         
-        // 現在のトークンを追加
         currentGroup.push(token.surface_form);
         currentIndices.push(...tokenIndices);
 
-        // 文節の区切り判定
         let shouldSplit = false;
 
-        // 助詞、助動詞、句読点で区切る
         if (pos === '助詞' || pos === '助動詞' || 
             token.surface_form.match(/[、。！？]/) ||
             features === '句点' || features === '読点') {
           shouldSplit = true;
         }
         
-        // 動詞・形容詞の活用形の後で区切る
         if (tokenIndex < tokens.length - 1) {
           const nextToken = tokens[tokenIndex + 1];
           if ((pos === '動詞' || pos === '形容詞') && 
@@ -163,7 +142,6 @@ const ScribbleTranslator = () => {
       return groups;
     } catch (error) {
       console.error('AI文節分割エラー:', error);
-      // エラー時はシンプルな分割にフォールバック
       return text.split('').map((char, idx) => ({
         indices: [idx],
         text: char,
@@ -173,7 +151,7 @@ const ScribbleTranslator = () => {
     }
   }, [isBunsetsuMode]);
 
-  // 音声認識の初期化（既存のコード）
+  // 音声認識の初期化
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -185,14 +163,11 @@ const ScribbleTranslator = () => {
       
       recognitionInstance.onresult = (event) => {
         let finalTranscript = '';
-        let interimTranscript = '';
         
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
             finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
           }
         }
         
@@ -247,11 +222,9 @@ const ScribbleTranslator = () => {
     }));
     setTextChars(chars);
     
-    // AI文節グループを解析
     const groups = analyzeBunsetsuWithAI(currentText);
     setBunsetsuGroups(groups);
     
-    // 選択をクリア
     setSelectedChars(new Set());
     setIsSelectionMode(false);
     setConfirmButtons(null);
@@ -307,7 +280,7 @@ const ScribbleTranslator = () => {
     }
   };
 
-  // 文節単位での選択（AI版）
+  // 文節単位での選択
   const toggleBunsetsuSelection = useCallback((groupIndex, e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (e && e.stopPropagation) e.stopPropagation();
@@ -323,11 +296,9 @@ const ScribbleTranslator = () => {
     const isGroupSelected = group.indices.every(idx => newSelected.has(idx));
     
     if (isGroupSelected) {
-      // 文節全体を選択解除
       group.indices.forEach(idx => newSelected.delete(idx));
       console.log(`文節 "${group.text}" を選択解除`);
     } else {
-      // 文節全体を選択
       group.indices.forEach(idx => newSelected.add(idx));
       console.log(`文節 "${group.text}" を選択`);
     }
@@ -344,7 +315,6 @@ const ScribbleTranslator = () => {
   // 個別文字のクリックハンドラ
   const toggleCharSelection = useCallback((index, e) => {
     if (!isBunsetsuMode) {
-      // 文節モードが無効の場合は個別選択
       if (e && e.preventDefault) e.preventDefault();
       if (e && e.stopPropagation) e.stopPropagation();
       
@@ -367,7 +337,6 @@ const ScribbleTranslator = () => {
         setShowTranslations(false);
       }
     } else {
-      // 文節モードの場合は文節単位で選択
       const groupIndex = bunsetsuGroups.findIndex(group => 
         group.indices.includes(index)
       );
@@ -421,7 +390,6 @@ const ScribbleTranslator = () => {
       });
       if (hit) {
         if (isBunsetsuMode) {
-          // 文節モードの場合、該当する文節全体を選択
           const group = bunsetsuGroups.find(g => g.indices.includes(idx));
           if (group) {
             group.indices.forEach(i => selectedIndices.add(i));
@@ -474,13 +442,11 @@ const ScribbleTranslator = () => {
     setCurrentText(initialText);
   };
 
-  // 文節モードの切り替え
   const toggleBunsetsuMode = () => {
     setIsBunsetsuMode(prev => !prev);
     cancelSelection();
   };
 
-  // 文字が文節の最後かどうか確認
   const isBunsetsuEnd = (index) => {
     return bunsetsuGroups.some(group => group.end === index);
   };
@@ -887,7 +853,6 @@ const ScribbleTranslator = () => {
           )}
         </div>
 
-        {/* AI文節表示（デバッグ用） */}
         {isBunsetsuMode && bunsetsuGroups.length > 0 && isTokenizerReady && (
           <div style={{ 
             marginTop: '16px', 
