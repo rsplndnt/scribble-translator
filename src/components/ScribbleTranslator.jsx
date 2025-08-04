@@ -45,6 +45,85 @@ const ScribbleTranslator = () => {
     setTextChars(chars);
   }, [initialText]);
 
+  // 選択文字の更新時に選択テキストを更新
+  useEffect(() => {
+    if (selectedChars.size > 0) {
+      const selectedTextString = Array.from(selectedChars)
+        .sort((a, b) => a - b)
+        .map(idx => textChars[idx]?.char || '')
+        .join('');
+      setSelectedText(selectedTextString);
+      
+      // 確認ボタンの位置を更新
+      updateConfirmButtonPosition();
+    } else {
+      setSelectedText('');
+      setConfirmButtons(null);
+    }
+  }, [selectedChars, textChars]);
+
+  // 確認ボタンの位置を計算
+  const updateConfirmButtonPosition = () => {
+    if (!containerRef.current || selectedChars.size === 0) return;
+    
+    const spans = containerRef.current.querySelectorAll('.char-span');
+    const overlayRect = overlayRef.current.getBoundingClientRect();
+    const positions = [];
+    
+    selectedChars.forEach(idx => {
+      const span = spans[idx];
+      if (span) {
+        const rect = span.getBoundingClientRect();
+        positions.push({
+          x: rect.left + rect.width / 2 - overlayRect.left,
+          y: rect.top + rect.height / 2 - overlayRect.top
+        });
+      }
+    });
+    
+    if (positions.length > 0) {
+      const xs = positions.map(p => p.x);
+      const ys = positions.map(p => p.y);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const maxY = Math.max(...ys);
+      
+      setConfirmButtons({
+        x: (minX + maxX) / 2,
+        y: maxY + 20,
+        count: selectedChars.size
+      });
+    }
+  };
+
+  // 個別文字のクリックハンドラ（選択/解除）
+  const handleCharClick = useCallback((index, e) => {
+    e.stopPropagation();
+    console.log(`Character ${index} clicked, currently selected: ${selectedChars.has(index)}`);
+    
+    setSelectedChars(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        // 選択解除
+        newSet.delete(index);
+        console.log(`Character ${index} deselected`);
+      } else {
+        // 選択
+        newSet.add(index);
+        console.log(`Character ${index} selected`);
+        setIsSelectionMode(true);
+      }
+      
+      // 選択文字がなくなったら選択モードを解除
+      if (newSet.size === 0) {
+        setIsSelectionMode(false);
+        setShowTranslations(false);
+      }
+      
+      return newSet;
+    });
+  }, [selectedChars]);
+
   const getMousePos = useCallback((e) => {
     if (!overlayRef.current) return { x: 0, y: 0 };
     
@@ -93,18 +172,7 @@ const ScribbleTranslator = () => {
     const selected = new Set(hits.map(h => h.idx));
     if (selected.size) {
       setIsSelectionMode(true);
-      const xs = hits.map(h => h.cx - overlayRect.left);
-      const ys = hits.map(h => h.cy - overlayRect.top);
-      const minX = Math.min(...xs), maxX = Math.max(...xs);
-      const maxY = Math.max(...ys);
-      setConfirmButtons({ x: (minX + maxX) / 2, y: maxY + 20, count: selected.size });
       setSelectedChars(selected);
-      
-      const selectedTextString = Array.from(selected)
-        .sort((a, b) => a - b)
-        .map(idx => textChars[idx]?.char || '')
-        .join('');
-      setSelectedText(selectedTextString);
     }
 
     setCurrentPath([]);
@@ -218,7 +286,7 @@ const ScribbleTranslator = () => {
     },
     textArea: {
       position: 'relative',
-      zIndex: 10,
+      zIndex: 15,  // overlayより上に配置
       userSelect: 'none',
       fontSize: '24px',
       lineHeight: '1.8',
@@ -227,7 +295,10 @@ const ScribbleTranslator = () => {
     charSpan: {
       display: 'inline-block',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      borderRadius: '4px'
+      borderRadius: '4px',
+      cursor: 'pointer',  // 常にポインターカーソル
+      position: 'relative',
+      zIndex: 15
     },
     selectedChar: {
       backgroundColor: '#E3F2FD',
@@ -236,7 +307,8 @@ const ScribbleTranslator = () => {
       padding: '4px 6px',
       margin: '0 2px',
       transform: 'scale(1.05)',
-      boxShadow: '0 2px 8px rgba(9, 111, 202, 0.2)'
+      boxShadow: '0 2px 8px rgba(9, 111, 202, 0.2)',
+      cursor: 'pointer'
     },
     overlay: {
       position: 'absolute',
@@ -244,7 +316,7 @@ const ScribbleTranslator = () => {
       left: 0,
       right: 0,
       bottom: 0,
-      zIndex: 20
+      zIndex: 10  // textAreaより下に配置
     },
     buttons: {
       position: 'absolute',
@@ -351,10 +423,10 @@ const ScribbleTranslator = () => {
         <div style={styles.toolbarInfo}>
           {selectedChars.size > 0 ? (
             <span style={{ color: '#096FCA', fontWeight: '500' }}>
-              ✨ {selectedChars.size}文字選択中: "{selectedText}"
+              ✨ {selectedChars.size}文字選択中: "{selectedText}" | 💡 選択した文字をクリックで解除
             </span>
           ) : (
-            <span>📝 文字数: {textChars.length} | マウスで文字をなぞって選択してください</span>
+            <span>📝 文字数: {textChars.length} | マウスで文字をなぞって選択、または個別クリックで選択</span>
           )}
           {isTranslating && (
             <span style={{ color: '#10b981', marginLeft: '16px', fontWeight: '500' }}>
@@ -374,6 +446,7 @@ const ScribbleTranslator = () => {
               <span 
                 key={c.id} 
                 className="char-span"
+                onClick={(e) => handleCharClick(i, e)}
                 style={{
                   ...styles.charSpan,
                   ...(selectedChars.has(i) ? styles.selectedChar : {})
@@ -414,7 +487,7 @@ const ScribbleTranslator = () => {
             )}
           </div>
 
-          {confirmButtons && (
+          {confirmButtons && selectedChars.size > 0 && (
             <div style={{
               ...styles.buttons,
               left: Math.max(20, confirmButtons.x - 100),
