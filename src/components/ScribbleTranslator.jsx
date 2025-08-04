@@ -86,6 +86,7 @@ const ScribbleTranslator = () => {
             if (err) {
               console.error('Kuromoji init error:', err);
               setIsBunsetsuMode(false);
+              setIsTokenizerReady(true);
               return;
             }
             tokenizerRef.current = tokenizer;
@@ -93,9 +94,11 @@ const ScribbleTranslator = () => {
           });
         } else {
           setIsBunsetsuMode(false);
+          setIsTokenizerReady(true);
         }
       } catch {
         setIsBunsetsuMode(false);
+        setIsTokenizerReady(true); 
       }
     };
     initializeTokenizer();
