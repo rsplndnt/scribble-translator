@@ -381,13 +381,13 @@ const ScribbleTranslator = () => {
     setCurrentPath(prev => [...prev, getMousePos(e)]);
   }, [currentPath, getMousePos]);
 
-  const stopDrawing = useCallback(() => {
+const stopDrawing = useCallback(() => {
     if (!currentPath.length) return setCurrentPath([]);
 
     const overlay = overlayRef.current;
     const spans = containerRef.current.querySelectorAll('.char-span');
     const overlayRect = overlay.getBoundingClientRect();
-    const hits = [];
+    const selectedIndices = new Set();
 
     spans.forEach((span, idx) => {
       const rect = span.getBoundingClientRect();
@@ -399,17 +399,8 @@ const ScribbleTranslator = () => {
         const absY = p.y + overlayRect.top;
         return Math.hypot(absX - cx, absY - cy) < Math.max(rect.width, rect.height) * 0.7;
       });
-      if (hit) hits.push(idx);
-    });
-
-    // ヒットした文字が属する文節グループを全て選択
-    const selectedIndices = new Set();
-    hits.forEach(idx => {
-      const group = bunsetsuGroups.find(g => g.indices.includes(idx));
-      if (group) {
-        group.indices.forEach(i => selectedIndices.add(i));
-      } else {
-        selectedIndices.add(idx);
+      if (hit) {
+        selectedIndices.add(idx); // 文節ではなく個別に選択
       }
     });
 
@@ -419,7 +410,7 @@ const ScribbleTranslator = () => {
     }
 
     setCurrentPath([]);
-  }, [currentPath, bunsetsuGroups]);
+  }, [currentPath]);
 
   const handleTranslate = useCallback(async () => {
     if (!selectedText.trim() || isTranslating) return;
