@@ -673,17 +673,17 @@ const stopDrawing = useCallback(() => {
       </div>
       
       <div style={styles.toolbar}>
-        <div style={styles.toolbarInfo}>
+<div style={styles.toolbarInfo}>
           {isListening ? (
             <span style={{ color: '#ef4444', fontWeight: '500' }}>
               🎤 音声入力中... 話してください
             </span>
           ) : selectedChars.size > 0 ? (
             <span style={{ color: '#096FCA', fontWeight: '500' }}>
-              ✨ {selectedChars.size}文字選択中: "{selectedText}" | 💡 選択は文節単位・解除は1文字ずつ
+              ✨ {selectedChars.size}文字選択中: "{selectedText}" | 💡 クリックで1文字ずつ選択・解除
             </span>
           ) : (
-            <span>📝 文字数: {textChars.length} | マウスで文字をなぞって文節単位で選択</span>
+            <span>📝 文字数: {textChars.length} | マウスで文字をなぞって選択、クリックで個別選択</span>
           )}
           {isTranslating && (
             <span style={{ color: '#10b981', marginLeft: '16px', fontWeight: '500' }}>
