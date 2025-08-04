@@ -107,100 +107,128 @@ const ScribbleTranslator = () => {
   }, [recognition, isListening, currentText, initialText]);
 
   // より高度な文節分割（形態素解析風）
+// より精密な文節分割
   const analyzeBunsetsu = (text) => {
     const groups = [];
     let currentGroup = [];
     let startIndex = 0;
-    
-    // 文節の区切りとなるパターン
-    const particles = ['が', 'を', 'に', 'へ', 'と', 'から', 'まで', 'より', 'で', 'や', 'の', 'は'];
-    const auxiliaryVerbs = ['です', 'ます', 'ました', 'ません', 'でした', 'ではない', 'だった', 'である'];
-    const conjunctions = ['て', 'で', 'し', 'が', 'けど', 'けれど', 'ので', 'から', 'ば', 'たら', 'なら'];
-    const punctuations = ['、', '。', '！', '？', '・', '：', '；'];
     
     // 品詞パターンを判定
     const isKanji = (char) => /[\u4e00-\u9faf]/.test(char);
     const isHiragana = (char) => /[\u3040-\u309f]/.test(char);
     const isKatakana = (char) => /[\u30a0-\u30ff]/.test(char);
     const isNumber = (char) => /[0-9０-９]/.test(char);
+    const isAlphabet = (char) => /[a-zA-Z]/.test(char);
     
-    for (let i = 0; i < text.length; i++) {
+    // 助詞リスト（文節の終わりを示す）
+    const particles = ['が', 'を', 'に', 'へ', 'と', 'から', 'まで', 'より', 'で', 'の', 'は', 'も', 'や', 'など', 'とか', 'たり', 'だり'];
+    const punctuations = ['、', '。', '！', '？', '・', '：', '；', '「', '」', '『', '』'];
+    
+    let i = 0;
+    while (i < text.length) {
       const char = text[i];
-      const nextChar = text[i + 1] || '';
-      const prevChar = text[i - 1] || '';
-      
       currentGroup.push(i);
       
-      let shouldSplit = false;
-      
-      // 句読点で必ず区切る
-      if (punctuations.includes(char)) {
-        shouldSplit = true;
-      }
-      // 助詞の後で区切る（ただし「の」は特別処理）
-      else if (particles.includes(char) && !isKanji(nextChar)) {
-        if (char === 'の' && isKanji(nextChar)) {
-          // 「〜の〜」の形は区切らない
-          shouldSplit = false;
-        } else {
+      // 次の文字で判断
+      if (i < text.length - 1) {
+        const nextChar = text[i + 1];
+        let shouldSplit = false;
+        
+        // 句読点は必ず区切る
+        if (punctuations.includes(char)) {
           shouldSplit = true;
         }
-      }
-      // 動詞・形容詞の活用語尾を検出
-      else if (i < text.length - 1) {
-        // 漢字+ひらがなのパターン
-        if (isKanji(char) && isHiragana(nextChar)) {
-          // 次の文字から活用語尾を探す
+        // 助詞の検出（1文字助詞）
+        else if (particles.includes(char) && !isKanji(nextChar)) {
+          shouldSplit = true;
+        }
+        // 「です」「ます」などの丁寧語
+        else if (char === 'で' && nextChar === 'す') {
+          currentGroup.push(i + 1);
+          i++;
+          shouldSplit = true;
+        }
+        else if (char === 'ま' && nextChar === 'す') {
+          currentGroup.push(i + 1);
+          i++;
+          shouldSplit = true;
+        }
+        // 動詞の活用形を検出
+        else if (isKanji(char) && isHiragana(nextChar)) {
+          // 動詞の語幹＋活用部分をまとめる
           let j = i + 1;
-          let conjugation = '';
           while (j < text.length && isHiragana(text[j])) {
-            conjugation += text[j];
-            j++;
-          }
-          
-          // 一般的な動詞活用パターン
-          const verbEndings = ['る', 'た', 'て', 'ない', 'ます', 'ました', 'ません'];
-          const adjEndings = ['い', 'く', 'かった', 'くない'];
-          
-          // 活用語尾が見つかったら、その後で区切る
-          for (const ending of [...verbEndings, ...adjEndings]) {
-            if (conjugation.startsWith(ending)) {
-              // 活用語尾を含めてグループに追加
-              for (let k = i + 1; k < i + 1 + ending.length && k < text.length; k++) {
-                currentGroup.push(k);
-              }
-              i = i + ending.length; // インデックスを進める
-              shouldSplit = true;
+            // 助詞が来たら止める
+            if (particles.includes(text[j])) {
               break;
             }
+            currentGroup.push(j);
+            j++;
+            
+            // 一般的な動詞活用の終わり
+            if (j < text.length) {
+              const substring = text.substring(i + 1, j + 1);
+              if (substring.endsWith('る') || substring.endsWith('た') || 
+                  substring.endsWith('て') || substring.endsWith('だ') ||
+                  substring.endsWith('い') || substring.endsWith('く') ||
+                  substring.endsWith('ない') || substring.endsWith('ません')) {
+                shouldSplit = true;
+                break;
+              }
+            }
           }
+          i = j - 1;
         }
-        // カタカナ語の後で区切る
-        else if (isKatakana(char) && !isKatakana(nextChar) && nextChar !== 'ー') {
+        // カタカナ語のまとまり
+        else if (isKatakana(char)) {
+          let j = i + 1;
+          while (j < text.length && (isKatakana(text[j]) || text[j] === 'ー')) {
+            currentGroup.push(j);
+            j++;
+          }
+          i = j - 1;
           shouldSplit = true;
         }
-        // 数字の後で区切る（単位を含む）
-        else if (isNumber(char) && !isNumber(nextChar)) {
+        // 数字のまとまり
+        else if (isNumber(char)) {
+          let j = i + 1;
+          while (j < text.length && isNumber(text[j])) {
+            currentGroup.push(j);
+            j++;
+          }
           // 単位を含める
-          if (nextChar && '円個本枚台冊人回度%'.includes(nextChar)) {
-            currentGroup.push(i + 1);
-            i++;
+          if (j < text.length && '円個本枚台冊人回度％%'.includes(text[j])) {
+            currentGroup.push(j);
+            j++;
           }
+          i = j - 1;
           shouldSplit = true;
+        }
+        // アルファベットのまとまり
+        else if (isAlphabet(char)) {
+          let j = i + 1;
+          while (j < text.length && isAlphabet(text[j])) {
+            currentGroup.push(j);
+            j++;
+          }
+          i = j - 1;
+          shouldSplit = true;
+        }
+        
+        // 区切る場合
+        if (shouldSplit && currentGroup.length > 0) {
+          groups.push({
+            indices: [...currentGroup],
+            text: text.slice(startIndex, i + 1),
+            start: startIndex,
+            end: i
+          });
+          currentGroup = [];
+          startIndex = i + 1;
         }
       }
       
-      // 区切る場合
-      if (shouldSplit && currentGroup.length > 0) {
-        groups.push({
-          indices: [...currentGroup],
-          text: text.slice(startIndex, i + 1),
-          start: startIndex,
-          end: i
-        });
-        currentGroup = [];
-        startIndex = i + 1;
-      }
+      i++;
     }
     
     // 残りの文字をグループに追加
@@ -213,27 +241,7 @@ const ScribbleTranslator = () => {
       });
     }
     
-    // 小さすぎるグループを結合（1文字の助詞など）
-    const mergedGroups = [];
-    for (let i = 0; i < groups.length; i++) {
-      const group = groups[i];
-      if (group.text.length === 1 && i < groups.length - 1 && 
-          !punctuations.includes(group.text) && !particles.includes(group.text)) {
-        // 次のグループと結合
-        const nextGroup = groups[i + 1];
-        mergedGroups.push({
-          indices: [...group.indices, ...nextGroup.indices],
-          text: group.text + nextGroup.text,
-          start: group.start,
-          end: nextGroup.end
-        });
-        i++; // 次のグループをスキップ
-      } else {
-        mergedGroups.push(group);
-      }
-    }
-    
-    return mergedGroups;
+    return groups;
   };
 
   // currentTextが変更されたらtextCharsを更新
