@@ -216,6 +216,15 @@ const ScribbleTranslator = () => {
 
   // currentTextが変更されたらtextCharsを更新
   useEffect(() => {
+      const handleKeyDown = (e) => {
+    if (e.key === 'Delete' && selectedChars.size > 0) {
+      handleDelete();
+    }
+  };
+
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+}, [selectedChars]);
     const chars = currentText.split('').map((char, idx) => ({ 
       char, 
       id: `char-${idx}` 
@@ -825,32 +834,40 @@ const ScribbleTranslator = () => {
             )}
           </div>
 
-          {confirmButtons && selectedChars.size > 0 && (
-            <div style={{
-              ...styles.buttons,
-              left: Math.max(20, confirmButtons.x - 100),
-              top: confirmButtons.y
-            }}>
-              <button 
-                onClick={handleTranslate} 
-                disabled={isTranslating}
-                style={{
-                  ...styles.translateButton,
-                  backgroundColor: isTranslating ? '#9ca3af' : '#10b981',
-                  transform: isTranslating ? 'scale(0.95)' : 'scale(1)'
-                }}
-              >
-                🌐 翻訳({confirmButtons.count})
-              </button>
-              
-              <button 
-                onClick={cancelSelection} 
-                style={styles.cancelButton}
-              >
-                ✕ キャンセル
-              </button>
-            </div>
-          )}
+{confirmButtons && selectedChars.size > 0 && (
+  <div style={{
+    ...styles.buttons,
+    left: Math.max(20, confirmButtons.x - 100),
+    top: confirmButtons.y
+  }}>
+    <button 
+      onClick={handleTranslate} 
+      disabled={isTranslating}
+      style={{
+        ...styles.translateButton,
+        backgroundColor: isTranslating ? '#9ca3af' : '#10b981',
+        transform: isTranslating ? 'scale(0.95)' : 'scale(1)'
+      }}
+    >
+      🌐 翻訳({confirmButtons.count})
+    </button>
+
+    <button 
+      onClick={handleDelete}
+      style={styles.deleteButton} // 👈 必要に応じて新しく定義
+    >
+      🗑️ 削除
+    </button>
+
+    <button 
+      onClick={cancelSelection} 
+      style={styles.cancelButton}
+    >
+      ✕ キャンセル
+    </button>
+  </div>
+)}
+
         </div>
 
         {isBunsetsuMode && bunsetsuGroups.length > 0 && isTokenizerReady && (
