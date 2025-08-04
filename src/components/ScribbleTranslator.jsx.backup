@@ -13,18 +13,6 @@ const translateWithMyMemory = async (text, targetLang) => {
   }
 };
 
-// gooラボ形態素解析API（無料・CORS対応）
-const analyzeMorphology = async (text) => {
-  try {
-    // Gooラボの形態素解析APIはCORS制限があるため、
-    // 簡易的な文節分割にフォールバック
-    return null;
-  } catch (error) {
-    console.error('Morphology analysis error:', error);
-    return null;
-  }
-};
-
 const ScribbleTranslator = () => {
   const containerRef = useRef(null);
   const overlayRef = useRef(null);
@@ -118,135 +106,22 @@ const ScribbleTranslator = () => {
     }
   }, [recognition, isListening, currentText, initialText]);
 
-  // 高度な文節分割（ルールベース＋統計的アプローチ）
+  // 簡易的な文節分割（助詞や接続詞で区切る）
   const analyzeBunsetsu = (text) => {
+    // 文節の区切りとなる文字パターン
+    const particles = ['は', 'が', 'を', 'に', 'で', 'へ', 'と', 'から', 'まで', 'より', 'の'];
+    const punctuations = ['、', '。', '！', '？', '・'];
+    
     const groups = [];
-    if (!text) return groups;
-    
-    // 文節の境界を示すパターンを定義
-    const patterns = {
-      // 助詞（格助詞、係助詞、副助詞、接続助詞）
-      particles: {
-        case: ['が', 'を', 'に', 'へ', 'と', 'から', 'より', 'で', 'や'],
-        topic: ['は', 'も', 'こそ', 'さえ', 'でも', 'しか', 'まで'],
-        conjunctive: ['て', 'で', 'ば', 'と', 'ても', 'ので', 'から', 'けれど', 'が'],
-        compound: ['には', 'では', 'とは', 'へは', 'からは', 'までは', 'にも', 'でも', 'とも']
-      },
-      // 活用語尾パターン
-      conjugations: {
-        verb: ['する', 'した', 'して', 'すれば', 'しない', 'しよう', 'します', 'しました', 'しません',
-               'れる', 'れた', 'れて', 'れない', 'れます', 'れました',
-               'せる', 'せた', 'せて', 'せない', 'せます', 'せました',
-               'ない', 'なかった', 'なくて', 'なければ',
-               'たい', 'たかった', 'たくて', 'たければ',
-               'ます', 'ました', 'ません', 'ませんでした'],
-        adjective: ['い', 'かった', 'くて', 'ければ', 'くない'],
-        auxVerb: ['です', 'でした', 'だ', 'だった', 'である', 'でない', 'でした']
-      },
-      // 句読点
-      punctuations: ['、', '。', '！', '？', '・', '：', '；', '「', '」', '（', '）']
-    };
-    
     let currentGroup = [];
     let startIndex = 0;
     
-    // 文字種判定関数
-    const getCharType = (char) => {
-      if (/[\u4e00-\u9faf]/.test(char)) return 'kanji';
-      if (/[\u3040-\u309f]/.test(char)) return 'hiragana';
-      if (/[\u30a0-\u30ff]/.test(char)) return 'katakana';
-      if (/[0-9０-９]/.test(char)) return 'number';
-      if (/[a-zA-Zａ-ｚＡ-Ｚ]/.test(char)) return 'alphabet';
-      return 'other';
-    };
-    
-    // 文節境界を判定
-    const isBunsetsuBoundary = (text, pos) => {
-      if (pos >= text.length - 1) return false;
-      
-      const currentChar = text[pos];
-      const nextChar = text[pos + 1];
-      const prevChar = pos > 0 ? text[pos - 1] : '';
-      
-      // 句読点は必ず境界
-      if (patterns.punctuations.includes(currentChar)) return true;
-      
-      // 複合助詞をチェック（2文字）
-      const twoChars = currentChar + nextChar;
-      if (patterns.particles.compound.includes(twoChars)) {
-        return true;
-      }
-      
-      // 単独助詞をチェック
-      for (const particleType in patterns.particles) {
-        if (patterns.particles[particleType].includes(currentChar)) {
-          // 「の」は次が体言なら区切らない
-          if (currentChar === 'の' && getCharType(nextChar) === 'kanji') {
-            return false;
-          }
-          return true;
-        }
-      }
-      
-      // 活用語尾をチェック（最大4文字まで見る）
-      if (getCharType(currentChar) === 'hiragana') {
-        for (let len = 4; len >= 1; len--) {
-          const substr = text.substr(pos, len);
-          for (const conjType in patterns.conjugations) {
-            if (patterns.conjugations[conjType].includes(substr)) {
-              // 前が漢字かひらがななら活用語尾として扱う
-              if (prevChar && (getCharType(prevChar) === 'kanji' || getCharType(prevChar) === 'hiragana')) {
-                return true;
-              }
-            }
-          }
-        }
-      }
-      
-      // 文字種の変化による境界
-      const currentType = getCharType(currentChar);
-      const nextType = getCharType(nextChar);
-      
-      // カタカナ語の終わり
-      if (currentType === 'katakana' && nextType !== 'katakana' && nextChar !== 'ー') {
-        return true;
-      }
-      
-      // 数字の終わり（単位を含む）
-      if (currentType === 'number' && nextType !== 'number') {
-        if ('円個本枚台冊人回度％%つ'.includes(nextChar)) {
-          return false; // 単位は含める
-        }
-        return true;
-      }
-      
-      return false;
-    };
-    
-    // テキストを走査して文節に分割
     for (let i = 0; i < text.length; i++) {
+      const char = text[i];
       currentGroup.push(i);
       
-      // 複合助詞の場合は2文字分進める
-      const twoChars = text.substr(i, 2);
-      if (patterns.particles.compound.includes(twoChars)) {
-        if (i + 1 < text.length) {
-          currentGroup.push(i + 1);
-          i++;
-        }
-      }
-      
-      // 単位を含める
-      if (i < text.length - 1 && '円個本枚台冊人回度％%つ'.includes(text[i + 1])) {
-        const currentType = getCharType(text[i]);
-        if (currentType === 'number') {
-          currentGroup.push(i + 1);
-          i++;
-        }
-      }
-      
-      // 文節境界なら区切る
-      if (isBunsetsuBoundary(text, i)) {
+      // 助詞または句読点の後で区切る
+      if (particles.includes(char) || punctuations.includes(char)) {
         groups.push({
           indices: [...currentGroup],
           text: text.slice(startIndex, i + 1),
@@ -255,6 +130,24 @@ const ScribbleTranslator = () => {
         });
         currentGroup = [];
         startIndex = i + 1;
+      }
+      // 漢字からひらがなへの変化でも区切る（簡易版）
+      else if (i < text.length - 1) {
+        const currentCharType = /[\u4e00-\u9faf]/.test(char) ? 'kanji' : 'other';
+        const nextCharType = /[\u4e00-\u9faf]/.test(text[i + 1]) ? 'kanji' : 'other';
+        const nextIsHiragana = /[\u3040-\u309f]/.test(text[i + 1]);
+        
+        if (currentCharType === 'kanji' && nextIsHiragana && !particles.includes(text[i + 1])) {
+          // 漢字の後にひらがなが来る場合（助詞以外）
+          let j = i + 1;
+          while (j < text.length && /[\u3040-\u309f]/.test(text[j]) && !particles.includes(text[j])) {
+            currentGroup.push(j);
+            j++;
+          }
+          if (j > i + 1) {
+            i = j - 1;
+          }
+        }
       }
     }
     
@@ -268,39 +161,7 @@ const ScribbleTranslator = () => {
       });
     }
     
-    // 後処理：1文字の文節を前後と結合（助詞以外）
-    const mergedGroups = [];
-    for (let i = 0; i < groups.length; i++) {
-      const group = groups[i];
-      const isSingleParticle = group.text.length === 1 && 
-        Object.values(patterns.particles).flat().includes(group.text);
-      
-      if (group.text.length === 1 && !isSingleParticle && !patterns.punctuations.includes(group.text)) {
-        // 前のグループと結合を試みる
-        if (mergedGroups.length > 0) {
-          const lastGroup = mergedGroups[mergedGroups.length - 1];
-          lastGroup.indices.push(...group.indices);
-          lastGroup.text += group.text;
-          lastGroup.end = group.end;
-        } else if (i < groups.length - 1) {
-          // 次のグループと結合
-          const nextGroup = groups[i + 1];
-          mergedGroups.push({
-            indices: [...group.indices, ...nextGroup.indices],
-            text: group.text + nextGroup.text,
-            start: group.start,
-            end: nextGroup.end
-          });
-          i++; // 次をスキップ
-        } else {
-          mergedGroups.push(group);
-        }
-      } else {
-        mergedGroups.push(group);
-      }
-    }
-    
-    return mergedGroups;
+    return groups;
   };
 
   // currentTextが変更されたらtextCharsを更新
@@ -373,48 +234,75 @@ const ScribbleTranslator = () => {
     }
   };
 
-  // 個別文字のクリックハンドラ（選択時は文節単位、解除時は1文字ずつ）
+  // 文節単位でのトグル
+  const toggleBunsetsuSelection = useCallback((groupIndex, e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
+    
+    if (!isSelectionMode) {
+      setIsSelectionMode(true);
+    }
+    
+    const group = bunsetsuGroups[groupIndex];
+    if (!group) return;
+    
+    const newSelected = new Set(selectedChars);
+    const isGroupSelected = group.indices.every(idx => newSelected.has(idx));
+    
+    if (isGroupSelected) {
+      // グループ全体を選択解除
+      group.indices.forEach(idx => newSelected.delete(idx));
+      console.log(`文節 "${group.text}" を選択解除`);
+    } else {
+      // グループ全体を選択
+      group.indices.forEach(idx => newSelected.add(idx));
+      console.log(`文節 "${group.text}" を選択`);
+    }
+    
+    setSelectedChars(newSelected);
+    
+    if (newSelected.size === 0) {
+      setConfirmButtons(null);
+      setIsSelectionMode(false);
+      setShowTranslations(false);
+    }
+  }, [selectedChars, isSelectionMode, bunsetsuGroups]);
+
+  // 個別文字のクリックハンドラ
   const toggleCharSelection = useCallback((index, e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (e && e.stopPropagation) e.stopPropagation();
     
-    const newSelected = new Set(selectedChars);
+    // どの文節グループに属するか確認
+    const groupIndex = bunsetsuGroups.findIndex(group => 
+      group.indices.includes(index)
+    );
     
-    // 既に選択されている文字をクリックした場合は、1文字だけ解除
-    if (newSelected.has(index)) {
-      newSelected.delete(index);
-      console.log(`文字 "${textChars[index]?.char}" を個別に選択解除`);
+    if (groupIndex !== -1) {
+      // 文節単位で選択/解除
+      toggleBunsetsuSelection(groupIndex, e);
+    } else {
+      // 文節に属さない場合は個別選択
+      if (!isSelectionMode) {
+        setIsSelectionMode(true);
+      }
+      
+      const newSelected = new Set(selectedChars);
+      if (newSelected.has(index)) {
+        newSelected.delete(index);
+      } else {
+        newSelected.add(index);
+      }
+      
+      setSelectedChars(newSelected);
       
       if (newSelected.size === 0) {
         setConfirmButtons(null);
         setIsSelectionMode(false);
         setShowTranslations(false);
       }
-      
-      setSelectedChars(newSelected);
-      return;
     }
-    
-    // 選択されていない文字をクリックした場合は、文節単位で選択
-    if (!isSelectionMode) {
-      setIsSelectionMode(true);
-    }
-    
-    // どの文節グループに属するか確認
-    const group = bunsetsuGroups.find(g => g.indices.includes(index));
-    
-    if (group) {
-      // 文節全体を選択
-      group.indices.forEach(idx => newSelected.add(idx));
-      console.log(`文節 "${group.text}" を選択`);
-    } else {
-      // 文節に属さない場合は個別選択
-      newSelected.add(index);
-      console.log(`文字 "${textChars[index]?.char}" を個別に選択`);
-    }
-    
-    setSelectedChars(newSelected);
-  }, [selectedChars, isSelectionMode, bunsetsuGroups, textChars]);
+  }, [selectedChars, isSelectionMode, bunsetsuGroups, toggleBunsetsuSelection]);
 
   const getMousePos = useCallback((e) => {
     if (!overlayRef.current) return { x: 0, y: 0 };
@@ -764,7 +652,7 @@ const ScribbleTranslator = () => {
             </span>
           ) : selectedChars.size > 0 ? (
             <span style={{ color: '#096FCA', fontWeight: '500' }}>
-              ✨ {selectedChars.size}文字選択中: "{selectedText}" | 💡 選択は文節単位・解除は1文字ずつ
+              ✨ {selectedChars.size}文字選択中: "{selectedText}" | 💡 文節単位で選択・解除
             </span>
           ) : (
             <span>📝 文字数: {textChars.length} | マウスで文字をなぞって文節単位で選択</span>
