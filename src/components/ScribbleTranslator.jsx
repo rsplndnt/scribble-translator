@@ -28,7 +28,6 @@ const ScribbleTranslator = () => {
   const [isTranslating, setIsTranslating] = useState(false);
   const [showTranslations, setShowTranslations] = useState(false);
   const [selectedText, setSelectedText] = useState('');
-  const [isDrawing, setIsDrawing] = useState(false);
 
   const targetLanguages = [
     { code: 'en', name: '英語', flag: '🇺🇸' },
@@ -67,70 +66,65 @@ const ScribbleTranslator = () => {
   const updateConfirmButtonPosition = () => {
     if (!containerRef.current || selectedChars.size === 0) return;
     
+    const overlay = overlayRef.current;
     const spans = containerRef.current.querySelectorAll('.char-span');
-    const overlayRect = overlayRef.current.getBoundingClientRect();
-    const positions = [];
+    const overlayRect = overlay.getBoundingClientRect();
+    const hits = [];
     
-    selectedChars.forEach(idx => {
+    Array.from(selectedChars).forEach(idx => {
       const span = spans[idx];
       if (span) {
         const rect = span.getBoundingClientRect();
-        positions.push({
-          x: rect.left + rect.width / 2 - overlayRect.left,
-          y: rect.top + rect.height / 2 - overlayRect.top
-        });
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        hits.push({ cx, cy });
       }
     });
     
-    if (positions.length > 0) {
-      const xs = positions.map(p => p.x);
-      const ys = positions.map(p => p.y);
+    if (hits.length > 0) {
+      const xs = hits.map(h => h.cx - overlayRect.left);
+      const ys = hits.map(h => h.cy - overlayRect.top);
       const minX = Math.min(...xs);
       const maxX = Math.max(...xs);
       const maxY = Math.max(...ys);
-      
-      setConfirmButtons({
-        x: (minX + maxX) / 2,
-        y: maxY + 20,
-        count: selectedChars.size
+      setConfirmButtons({ 
+        x: (minX + maxX) / 2, 
+        y: maxY + 20, 
+        count: selectedChars.size 
       });
     }
   };
 
-  // 個別文字のクリックハンドラ（選択/解除）
-  const handleCharClick = useCallback((index, e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  // 個別文字のクリックハンドラ（選択/解除）- 参考コードのtoggleCharSelectionと同様の実装
+  const toggleCharSelection = useCallback((index, e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
     
-    // ドラッグ中は無視
-    if (isDrawing) {
-      return;
+    // 選択モードでない場合は、選択モードをONにする
+    if (!isSelectionMode) {
+      setIsSelectionMode(true);
     }
     
     console.log(`Character ${index} clicked, currently selected: ${selectedChars.has(index)}`);
     
-    setSelectedChars(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(index)) {
-        // 選択解除
-        newSet.delete(index);
-        console.log(`Character ${index} deselected`);
-      } else {
-        // 選択
-        newSet.add(index);
-        console.log(`Character ${index} selected`);
-        setIsSelectionMode(true);
-      }
-      
-      // 選択文字がなくなったら選択モードを解除
-      if (newSet.size === 0) {
-        setIsSelectionMode(false);
-        setShowTranslations(false);
-      }
-      
-      return newSet;
-    });
-  }, [selectedChars, isDrawing]);
+    const newSelected = new Set(selectedChars);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+      console.log(`Character ${index} deselected`);
+    } else {
+      newSelected.add(index);
+      console.log(`Character ${index} selected`);
+    }
+    
+    setSelectedChars(newSelected);
+    
+    // 選択が0になったら選択モードを解除
+    if (newSelected.size === 0) {
+      setConfirmButtons(null);
+      setIsSelectionMode(false);
+      setShowTranslations(false);
+    }
+  }, [selectedChars, isSelectionMode]);
 
   const getMousePos = useCallback((e) => {
     if (!overlayRef.current) return { x: 0, y: 0 };
@@ -143,7 +137,6 @@ const ScribbleTranslator = () => {
 
   const startDrawing = useCallback((e) => {
     e.preventDefault();
-    setIsDrawing(true);
     setIsSelectionMode(false);
     setSelectedChars(new Set());
     setConfirmButtons(null);
@@ -152,15 +145,12 @@ const ScribbleTranslator = () => {
   }, [getMousePos]);
 
   const draw = useCallback((e) => {
-    if (!isDrawing || !currentPath.length) return;
+    if (!currentPath.length) return;
     e.preventDefault();
     setCurrentPath(prev => [...prev, getMousePos(e)]);
-  }, [currentPath, getMousePos, isDrawing]);
+  }, [currentPath, getMousePos]);
 
   const stopDrawing = useCallback(() => {
-    if (!isDrawing) return;
-    setIsDrawing(false);
-    
     if (!currentPath.length) return setCurrentPath([]);
 
     const overlay = overlayRef.current;
@@ -188,7 +178,7 @@ const ScribbleTranslator = () => {
     }
 
     setCurrentPath([]);
-  }, [currentPath, textChars, isDrawing]);
+  }, [currentPath, textChars]);
 
   const handleTranslate = useCallback(async () => {
     if (!selectedText.trim() || isTranslating) return;
@@ -298,7 +288,7 @@ const ScribbleTranslator = () => {
     },
     textArea: {
       position: 'relative',
-      zIndex: 20,  // overlayより上に配置
+      zIndex: 10,
       userSelect: 'none',
       fontSize: '24px',
       lineHeight: '1.8',
@@ -310,8 +300,8 @@ const ScribbleTranslator = () => {
       borderRadius: '4px',
       cursor: 'pointer',
       position: 'relative',
-      zIndex: 25,  // 確実にoverlayより上
-      padding: '2px 4px'
+      zIndex: isSelectionMode ? 25 : 10,
+      pointerEvents: isSelectionMode ? 'auto' : 'none'
     },
     selectedChar: {
       backgroundColor: '#E3F2FD',
@@ -329,7 +319,7 @@ const ScribbleTranslator = () => {
       left: 0,
       right: 0,
       bottom: 0,
-      zIndex: 10  // textAreaより下に配置
+      zIndex: 20
     },
     buttons: {
       position: 'absolute',
@@ -459,11 +449,16 @@ const ScribbleTranslator = () => {
               <span 
                 key={c.id} 
                 className="char-span"
-                onClick={(e) => handleCharClick(i, e)}
-                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  toggleCharSelection(i, e);
+                }}
                 style={{
                   ...styles.charSpan,
-                  ...(selectedChars.has(i) ? styles.selectedChar : {})
+                  ...(selectedChars.has(i) ? styles.selectedChar : {}),
+                  ...(isSelectionMode && !selectedChars.has(i) ? {
+                    cursor: 'pointer',
+                    padding: '2px 1px'
+                  } : {})
                 }}
               >
                 {c.char === ' ' ? '\u00A0' : c.char}
