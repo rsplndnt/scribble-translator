@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy Vite App to GitHub Pages
 
 on:
   push:
@@ -31,13 +31,14 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Build React app
+    - name: Build Vite app
       run: |
         npm run build
-        ls -la build/
+        echo "✅ Build completed"
+        echo "📁 Contents of dist folder:"
+        ls -la dist/
       env:
-        CI: false
-        PUBLIC_URL: /scribble-translator
+        NODE_ENV: production
         
     - name: Setup Pages
       uses: actions/configure-pages@v4
@@ -45,7 +46,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: ./build
+        path: ./dist
         
     - name: Deploy to GitHub Pages
       id: deployment
