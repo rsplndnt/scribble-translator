@@ -29,12 +29,84 @@ const ScribbleTranslator = () => {
   const [showTranslations, setShowTranslations] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [bunsetsuGroups, setBunsetsuGroups] = useState([]);
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState(null);
+  const [currentText, setCurrentText] = useState(initialText);
 
   const targetLanguages = [
     { code: 'en', name: '英語', flag: '🇺🇸' },
     { code: 'ko', name: '韓国語', flag: '🇰🇷' },
     { code: 'zh', name: '中国語', flag: '🇨🇳' },
-  ];  // 簡易的な文節分割（助詞や接続詞で区切る）
+  ];
+
+  // 音声認識の初期化
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognitionInstance = new SpeechRecognition();
+      
+      recognitionInstance.lang = 'ja-JP';
+      recognitionInstance.interimResults = true;
+      recognitionInstance.continuous = true;
+      
+      recognitionInstance.onresult = (event) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        if (finalTranscript) {
+          setCurrentText(prev => prev + finalTranscript);
+        }
+      };
+      
+      recognitionInstance.onerror = (event) => {
+        console.error('音声認識エラー:', event.error);
+        setIsListening(false);
+      };
+      
+      recognitionInstance.onend = () => {
+        setIsListening(false);
+      };
+      
+      setRecognition(recognitionInstance);
+    }
+  }, []);
+
+  // 音声入力の開始/停止
+  const toggleVoiceInput = useCallback(() => {
+    if (!recognition) {
+      alert('お使いのブラウザは音声認識に対応していません。ChromeまたはEdgeをお使いください。');
+      return;
+    }
+    
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      // テキストをクリアするか確認
+      if (currentText !== initialText) {
+        const shouldClear = window.confirm('現在のテキストをクリアして音声入力を開始しますか？\n「キャンセル」を選択すると現在のテキストに追加されます。');
+        if (shouldClear) {
+          setCurrentText('');
+        }
+      } else {
+        setCurrentText('');
+      }
+      
+      recognition.start();
+      setIsListening(true);
+    }
+  }, [recognition, isListening, currentText, initialText]);
+
+  // 簡易的な文節分割（助詞や接続詞で区切る）
   const analyzeBunsetsu = (text) => {
     // 文節の区切りとなる文字パターン
     const particles = ['は', 'が', 'を', 'に', 'で', 'へ', 'と', 'から', 'まで', 'より', 'の'];
@@ -92,18 +164,25 @@ const ScribbleTranslator = () => {
     return groups;
   };
 
+  // currentTextが変更されたらtextCharsを更新
   useEffect(() => {
-    const chars = initialText.split('').map((char, idx) => ({ 
+    const chars = currentText.split('').map((char, idx) => ({ 
       char, 
       id: `char-${idx}` 
     }));
     setTextChars(chars);
     
     // 文節グループを解析
-    const groups = analyzeBunsetsu(initialText);
+    const groups = analyzeBunsetsu(currentText);
     setBunsetsuGroups(groups);
     console.log('文節グループ:', groups.map(g => g.text));
-  }, [initialText]);
+    
+    // 選択をクリア
+    setSelectedChars(new Set());
+    setIsSelectionMode(false);
+    setConfirmButtons(null);
+    setShowTranslations(false);
+  }, [currentText]);
 
   // 選択文字の更新時に選択テキストを更新
   useEffect(() => {
@@ -320,13 +399,7 @@ const ScribbleTranslator = () => {
 
   const resetText = () => {
     cancelSelection();
-    const chars = initialText.split('').map((char, idx) => ({ 
-      char, 
-      id: `char-${idx}` 
-    }));
-    setTextChars(chars);
-    const groups = analyzeBunsetsu(initialText);
-    setBunsetsuGroups(groups);
+    setCurrentText(initialText);
   };
 
   const styles = {
@@ -370,6 +443,26 @@ const ScribbleTranslator = () => {
       fontSize: '14px',
       color: '#3A3E40'
     },
+    toolbarButtons: {
+      display: 'flex',
+      gap: '12px',
+      alignItems: 'center'
+    },
+    voiceButton: {
+      padding: '8px 16px',
+      backgroundColor: isListening ? '#ef4444' : '#3b82f6',
+      color: 'white',
+      border: 'none',
+      borderRadius: '6px',
+      fontSize: '14px',
+      fontWeight: '500',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      boxShadow: isListening ? '0 2px 4px rgba(239, 68, 68, 0.3)' : '0 2px 4px rgba(59, 130, 246, 0.3)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px'
+    },
     resetButton: {
       padding: '8px 16px',
       backgroundColor: '#FF7669',
@@ -404,7 +497,8 @@ const ScribbleTranslator = () => {
       userSelect: 'none',
       fontSize: '24px',
       lineHeight: '1.8',
-      color: '#3A3E40'
+      color: '#3A3E40',
+      minHeight: '100px'
     },
     charSpan: {
       display: 'inline-block',
@@ -529,6 +623,12 @@ const ScribbleTranslator = () => {
     loadingText: {
       color: '#96A0A6',
       fontStyle: 'italic'
+    },
+    emptyState: {
+      textAlign: 'center',
+      color: '#96A0A6',
+      fontSize: '16px',
+      padding: '40px 0'
     }
   };
 
@@ -546,7 +646,11 @@ const ScribbleTranslator = () => {
       
       <div style={styles.toolbar}>
         <div style={styles.toolbarInfo}>
-          {selectedChars.size > 0 ? (
+          {isListening ? (
+            <span style={{ color: '#ef4444', fontWeight: '500' }}>
+              🎤 音声入力中... 話してください
+            </span>
+          ) : selectedChars.size > 0 ? (
             <span style={{ color: '#096FCA', fontWeight: '500' }}>
               ✨ {selectedChars.size}文字選択中: "{selectedText}" | 💡 文節単位で選択・解除
             </span>
@@ -559,34 +663,53 @@ const ScribbleTranslator = () => {
             </span>
           )}
         </div>
-        <button onClick={resetText} style={styles.resetButton}>
-          🔄 リセット
-        </button>
+        <div style={styles.toolbarButtons}>
+          <button 
+            onClick={toggleVoiceInput} 
+            style={styles.voiceButton}
+            disabled={!recognition}
+          >
+            {isListening ? (
+              <>⏹️ 音声入力停止</>
+            ) : (
+              <>🎤 音声入力</>
+            )}
+          </button>
+          <button onClick={resetText} style={styles.resetButton}>
+            🔄 リセット
+          </button>
+        </div>
       </div>
 
       <div style={styles.main}>
         <div ref={containerRef} style={styles.textContainer}>
           <div style={styles.textArea}>
-            {textChars.map((c, i) => (
-              <span 
-                key={c.id} 
-                className="char-span"
-                onClick={(e) => {
-                  toggleCharSelection(i, e);
-                }}
-                style={{
-                  ...styles.charSpan,
-                  ...(selectedChars.has(i) ? styles.selectedChar : {}),
-                  ...(isSelectionMode && !selectedChars.has(i) ? {
-                    cursor: 'pointer',
-                    padding: '2px 1px'
-                  } : {}),
-                  ...(isBunsetsuEnd(i) && !isSelectionMode ? styles.bunsetsuBorder : {})
-                }}
-              >
-                {c.char === ' ' ? '\u00A0' : c.char}
-              </span>
-            ))}
+            {textChars.length > 0 ? (
+              textChars.map((c, i) => (
+                <span 
+                  key={c.id} 
+                  className="char-span"
+                  onClick={(e) => {
+                    toggleCharSelection(i, e);
+                  }}
+                  style={{
+                    ...styles.charSpan,
+                    ...(selectedChars.has(i) ? styles.selectedChar : {}),
+                    ...(isSelectionMode && !selectedChars.has(i) ? {
+                      cursor: 'pointer',
+                      padding: '2px 1px'
+                    } : {}),
+                    ...(isBunsetsuEnd(i) && !isSelectionMode ? styles.bunsetsuBorder : {})
+                  }}
+                >
+                  {c.char === ' ' ? '\u00A0' : c.char}
+                </span>
+              ))
+            ) : (
+              <div style={styles.emptyState}>
+                {isListening ? '🎤 話してください...' : '🎤 音声入力ボタンを押して話してください'}
+              </div>
+            )}
           </div>
 
           <div
@@ -649,25 +772,27 @@ const ScribbleTranslator = () => {
         </div>
 
         {/* 文節表示（デバッグ用 - 必要なければ削除可） */}
-        <div style={{ 
-          marginTop: '16px', 
-          padding: '16px', 
-          backgroundColor: '#f3f4f6', 
-          borderRadius: '8px',
-          fontSize: '14px',
-          color: '#6b7280'
-        }}>
-          文節分割: {bunsetsuGroups.map((g, i) => (
-            <span key={i} style={{ 
-              margin: '0 4px',
-              padding: '2px 6px',
-              backgroundColor: '#e5e7eb',
-              borderRadius: '4px'
-            }}>
-              {g.text}
-            </span>
-          ))}
-        </div>
+        {bunsetsuGroups.length > 0 && (
+          <div style={{ 
+            marginTop: '16px', 
+            padding: '16px', 
+            backgroundColor: '#f3f4f6', 
+            borderRadius: '8px',
+            fontSize: '14px',
+            color: '#6b7280'
+          }}>
+            文節分割: {bunsetsuGroups.map((g, i) => (
+              <span key={i} style={{ 
+                margin: '0 4px',
+                padding: '2px 6px',
+                backgroundColor: '#e5e7eb',
+                borderRadius: '4px'
+              }}>
+                {g.text}
+              </span>
+            ))}
+          </div>
+        )}
 
         {showTranslations && selectedText && (
           <div style={styles.translationContainer}>
