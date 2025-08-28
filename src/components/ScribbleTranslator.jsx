@@ -26,13 +26,172 @@ const translateToJapanese = async (text, sourceLang) => {
   }
 };
 
+// Google APIを使用した再変換候補生成
+const generateReconversionCandidates = async (text) => {
+  try {
+    console.log(`Google API再変換開始: "${text}"`);
+    
+    // Google Translate APIを使用して複数の変換候補を生成
+    const candidates = [];
+    
+    // 1. 元のテキストを含める
+    candidates.push(text);
+    
+    // 2. ひらがな→漢字変換（日本語→英語→日本語で異なる候補を取得）
+    if (/^[ひらがな]+$/.test(text) || /[ひらがな]/.test(text)) {
+      try {
+        // 日本語→英語
+        const englishResult = await translateWithGoogle(text, 'en');
+        console.log(`日→英: "${text}" → "${englishResult}"`);
+        
+        // 英語→日本語（複数の翻訳エンジンを模擬）
+        const backToJapanese = await translateWithGoogle(englishResult, 'ja');
+        console.log(`英→日: "${englishResult}" → "${backToJapanese}"`);
+        
+        if (backToJapanese && backToJapanese !== text) {
+          candidates.push(backToJapanese);
+        }
+        
+        // さらに韓国語経由でも試行
+        const koreanResult = await translateWithGoogle(text, 'ko');
+        const fromKorean = await translateWithGoogle(koreanResult, 'ja');
+        if (fromKorean && fromKorean !== text && !candidates.includes(fromKorean)) {
+          candidates.push(fromKorean);
+        }
+        
+        // 中国語経由でも試行
+        const chineseResult = await translateWithGoogle(text, 'zh');
+        const fromChinese = await translateWithGoogle(chineseResult, 'ja');
+        if (fromChinese && fromChinese !== text && !candidates.includes(fromChinese)) {
+          candidates.push(fromChinese);
+        }
+        
+      } catch (error) {
+        console.warn('Google API変換エラー:', error);
+      }
+    }
+    
+    // 3. 漢字→ひらがな変換（ローマ字経由）
+    if (/[漢字]/.test(text) || /[\u4e00-\u9faf]/.test(text)) {
+      try {
+        // より自然な読みを取得するため、説明文として翻訳
+        const explanation = await translateWithGoogle(`「${text}」の読み方`, 'en');
+        const backExplanation = await translateWithGoogle(explanation, 'ja');
+        
+        // 簡単な後処理で読みを抽出
+        const hiraganaMatch = backExplanation.match(/([ひらがな]+)/);
+        if (hiraganaMatch && !candidates.includes(hiraganaMatch[1])) {
+          candidates.push(hiraganaMatch[1]);
+        }
+      } catch (error) {
+        console.warn('読み変換エラー:', error);
+      }
+    }
+    
+    // 4. フォールバック: 基本的なパターンマッチング
+    const fallbackCandidates = generateFallbackCandidates(text);
+    fallbackCandidates.forEach(candidate => {
+      if (!candidates.includes(candidate)) {
+        candidates.push(candidate);
+      }
+    });
+    
+    console.log(`再変換候補生成完了: ${candidates.length}件`, candidates);
+    return candidates.slice(0, 8); // 最大8候補
+    
+  } catch (error) {
+    console.error('Google API再変換エラー:', error);
+    // フォールバック: 基本的なパターンマッチング
+    return generateFallbackCandidates(text);
+  }
+};
+
+// Google Translate APIの改良版（エラーハンドリング強化）
+const translateWithGoogle = async (text, targetLang, retries = 2) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const result = data[0][0][0];
+      
+      // 結果の検証
+      if (result && result.trim() && result !== text) {
+        return result.trim();
+      }
+      
+      throw new Error('Invalid translation result');
+      
+    } catch (error) {
+      console.warn(`翻訳試行 ${i+1}/${retries} 失敗:`, error.message);
+      
+      if (i === retries - 1) {
+        throw error;
+      }
+      
+      // リトライ前の待機（レート制限対策）
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+};
+
+// フォールバック用の基本パターンマッチング
+const generateFallbackCandidates = (text) => {
+  const patterns = [
+    // よく使われる変換パターン
+    { from: 'きみ', to: ['君', '黄身', '公'] },
+    { from: 'うつくしい', to: ['美しい', '麗しい'] },
+    { from: 'こんにちは', to: ['今日は', 'こんにちは'] },
+    { from: 'ありがとう', to: ['有り難う', 'ありがとう', '有難う'] },
+    { from: 'にほん', to: ['日本', '二本'] },
+    { from: 'わたし', to: ['私', '渡し', 'わたくし'] },
+    { from: 'あなた', to: ['貴方', 'あなた', '貴女'] },
+    
+    // 逆変換
+    { from: '君', to: ['きみ', '黄身'] },
+    { from: '美しい', to: ['うつくしい', '麗しい'] },
+    { from: '日本', to: ['にほん', 'にっぽん'] },
+    { from: '私', to: ['わたし', 'わたくし'] },
+    
+    // 複合語
+    { from: 'きみはうつくしい', to: ['君は美しい', '黄身は美しい'] },
+    { from: '君は美しい', to: ['きみはうつくしい', '黄身は美しい'] },
+  ];
+  
+  // 完全一致
+  const exactMatch = patterns.find(p => p.from === text);
+  if (exactMatch) {
+    return [text, ...exactMatch.to];
+  }
+  
+  // 部分一致
+  const candidates = [text];
+  patterns.forEach(pattern => {
+    if (text.includes(pattern.from)) {
+      pattern.to.forEach(replacement => {
+        const converted = text.replace(pattern.from, replacement);
+        if (converted !== text && !candidates.includes(converted)) {
+          candidates.push(converted);
+        }
+      });
+    }
+  });
+  
+  return candidates.slice(0, 6);
+};
+
 const ScribbleTranslator = () => {
   // ——— ① State/Ref フック群 ———
   const containerRef   = useRef(null);
   const overlayRef     = useRef(null);
   const tokenizerRef   = useRef(null);
 
-  const initialText = 'この文章の文字を選択してから翻訳できます。ぐしゃぐしゃ描いて文字を選択し、翻訳ボタンを押してください。';
+  const initialText = 'きみはうつくしい。この文章の文字を選択してから翻訳や再変換ができます。ぐしゃぐしゃ描いて文字を選択し、ボタンを押してください。';
 
   const [textChars, setTextChars]           = useState([]);
   const [selectedChars, setSelectedChars]   = useState(new Set());
@@ -54,6 +213,9 @@ const ScribbleTranslator = () => {
   const [isBunsetsuMode, setIsBunsetsuMode] = useState(true);
   const [isDrawing, setIsDrawing]           = useState(false);
   const [kuromojiStatus, setKuromojiStatus] = useState('initializing'); // initializing, ready, error
+  // 再変換機能用の状態（追加）
+  const [showReconversion, setShowReconversion] = useState(false);
+  const [reconversionCandidates, setReconversionCandidates] = useState([]);
 
   const targetLanguages = [
     { code: 'en', name: '英語',   flag: '🇺🇸' },
@@ -71,6 +233,8 @@ const ScribbleTranslator = () => {
     setTranslations({});
     setBackTranslations({});
     setShowBackTranslations(false);
+    setShowReconversion(false); // 追加
+    setReconversionCandidates([]); // 追加
   }, []);
 
   // ——— 削除処理ハンドラ ———
@@ -382,6 +546,7 @@ const ScribbleTranslator = () => {
     setIsTranslating(true);
     setShowTranslations(true);
     setShowBackTranslations(false);
+    setShowReconversion(false); // 追加
     setBackTranslations({});
     const results = {};
     for (const lang of targetLanguages) {
@@ -396,6 +561,7 @@ const ScribbleTranslator = () => {
     if (isBackTranslating) return;
     setIsBackTranslating(true);
     setShowBackTranslations(true);
+    setShowReconversion(false); // 追加
     const results = {};
     
     for (const lang of targetLanguages) {
@@ -408,6 +574,48 @@ const ScribbleTranslator = () => {
     setBackTranslations(results);
     setIsBackTranslating(false);
   }, [translations, isBackTranslating]);
+
+  // ——— 再変換機能（Google API使用） ———
+  const handleReconversion = useCallback(async () => {
+    if (!selectedText.trim()) return;
+    
+    setShowReconversion(true);
+    setShowTranslations(false);
+    setShowBackTranslations(false);
+    setReconversionCandidates(['🔄 候補を生成中...']); // ローディング表示
+    
+    try {
+      const candidates = await generateReconversionCandidates(selectedText.trim());
+      setReconversionCandidates(candidates);
+    } catch (error) {
+      console.error('再変換エラー:', error);
+      setReconversionCandidates([selectedText, '❌ 再変換に失敗しました']);
+    }
+  }, [selectedText]);
+
+  // ——— 再変換適用機能（追加） ———
+  const applyReconversion = useCallback((newText) => {
+    const selectedIndices = Array.from(selectedChars).sort((a, b) => a - b);
+    const newTextArray = currentText.split('');
+    
+    // 選択された文字を新しいテキストで置き換え
+    const newTextChars = newText.split('');
+    
+    // 古い文字を削除
+    for (let i = selectedIndices.length - 1; i >= 0; i--) {
+      newTextArray.splice(selectedIndices[i], 1);
+    }
+    
+    // 新しい文字を挿入
+    const insertIndex = selectedIndices[0];
+    newTextChars.forEach((char, idx) => {
+      newTextArray.splice(insertIndex + idx, 0, char);
+    });
+    
+    setCurrentText(newTextArray.join(''));
+    setShowReconversion(false);
+    cancelSelection();
+  }, [selectedChars, currentText, cancelSelection]);
 
   // ——— 文節モード切替 ———
   const toggleBunsetsuMode = () => {
@@ -508,12 +716,21 @@ const ScribbleTranslator = () => {
     },
     bunsetsuBorder: { borderRight: '2px dotted #FF7669', paddingRight: '3px', marginRight: '3px' },
     overlay: { position: 'absolute', top:0, left:0, right:0, bottom:0, zIndex:20 },
-    buttons: { position: 'absolute', zIndex:30, display:'flex', gap:'12px' },
+    buttons: { position: 'absolute', zIndex:30, display:'flex', gap:'12px', flexWrap: 'wrap' },
     translateButton: {
       padding:'12px 20px', border:'none', borderRadius:'8px',
       fontSize:'14px', fontWeight:600, cursor:'pointer',
       display:'flex', alignItems:'center', gap:'8px',
       boxShadow:'0 4px 12px rgba(16,185,129,0.3)'
+    },
+    // 再変換ボタンのスタイル（追加）
+    reconversionButton: {
+      padding: '12px 20px', border: 'none', borderRadius: '8px',
+      fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+      backgroundColor: '#f59e0b', color: 'white',
+      transition: 'background-color 0.2s',
+      display: 'flex', alignItems: 'center', gap: '8px',
+      boxShadow: '0 4px 12px rgba(245,158,11,0.3)'
     },
     cancelButton: {
       padding:'12px 20px', border:'none', borderRadius:'8px',
@@ -570,6 +787,22 @@ const ScribbleTranslator = () => {
     backTranslationTitle: {
       fontSize: '18px', fontWeight: 600, color: '#4b5563',
       marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px'
+    },
+    // 再変換用スタイル（追加）
+    reconversionGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+      gap: '12px'
+    },
+    candidateButton: {
+      padding: '12px 16px',
+      backgroundColor: '#fef3c7',
+      border: '2px solid #f59e0b',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      fontSize: '16px',
+      textAlign: 'center'
     }
   };
 
@@ -603,7 +836,7 @@ const ScribbleTranslator = () => {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>🎨 スクリブル翻訳</h1>
+        <h1 style={styles.title}>🎨 スクリブル翻訳・再変換</h1>
         <p style={styles.subtitle}>AI文節認識で、より自然な文字選択を実現</p>
       </div>
 
@@ -698,7 +931,7 @@ const ScribbleTranslator = () => {
           {confirmButtons && selectedChars.size > 0 && (
             <div style={{
               ...styles.buttons,
-              left: Math.max(20, confirmButtons.x - 100),
+              left: Math.max(20, confirmButtons.x - 150),
               top: confirmButtons.y
             }}>
               <button
@@ -712,6 +945,15 @@ const ScribbleTranslator = () => {
               >
                 🌐 翻訳({confirmButtons.count})
               </button>
+              
+              {/* 再変換ボタン（追加） */}
+              <button
+                onClick={handleReconversion}
+                style={styles.reconversionButton}
+              >
+                🔄 再変換({confirmButtons.count})
+              </button>
+              
               <button
                 onClick={handleDelete}
                 style={{
@@ -832,6 +1074,76 @@ const ScribbleTranslator = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 再変換結果表示（追加） */}
+        {showReconversion && selectedText && (
+          <div style={styles.translationContainer}>
+            <h3 style={styles.translationTitle}>🔄 再変換候補</h3>
+            <div style={styles.selectedTextBox}>
+              <strong>📝 現在のテキスト:</strong>{' '}
+              <span>{selectedText}</span>
+            </div>
+            
+            <div style={styles.reconversionGrid}>
+              {reconversionCandidates.map((candidate, index) => (
+                <button
+                  key={index}
+                  onClick={() => candidate.includes('🔄') || candidate.includes('❌') ? null : applyReconversion(candidate)}
+                  disabled={candidate.includes('🔄') || candidate.includes('❌')}
+                  style={{
+                    ...styles.candidateButton,
+                    opacity: candidate.includes('🔄') || candidate.includes('❌') ? 0.6 : 1,
+                    cursor: candidate.includes('🔄') || candidate.includes('❌') ? 'default' : 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!candidate.includes('🔄') && !candidate.includes('❌')) {
+                      e.target.style.backgroundColor = '#fcd34d';
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!candidate.includes('🔄') && !candidate.includes('❌')) {
+                      e.target.style.backgroundColor = '#fef3c7';
+                      e.target.style.transform = 'none';
+                      e.target.style.boxShadow = 'none';
+                    }
+                  }}
+                >
+                  {candidate}
+                  {index === 0 && !candidate.includes('🔄') && !candidate.includes('❌') && (
+                    <div style={{ fontSize: '12px', color: '#92400e', marginTop: '4px' }}>
+                      (元のテキスト)
+                    </div>
+                  )}
+                  {candidate.includes('🔄') && (
+                    <div style={{ fontSize: '12px', color: '#92400e', marginTop: '4px' }}>
+                      Google APIで候補を生成中...
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+            
+            {reconversionCandidates.length === 1 && !reconversionCandidates[0].includes('🔄') && (
+              <div style={{ textAlign: 'center', color: '#6b7280', marginTop: '16px' }}>
+                他の変換候補が見つかりませんでした
+              </div>
+            )}
+            
+            {reconversionCandidates.some(c => c.includes('Google')) && (
+              <div style={{ 
+                textAlign: 'center', 
+                color: '#10b981', 
+                marginTop: '16px', 
+                fontSize: '14px',
+                fontWeight: '500'
+              }}>
+                ✨ Google翻訳APIによる高精度な変換候補
               </div>
             )}
           </div>
