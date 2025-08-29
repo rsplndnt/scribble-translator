@@ -28,128 +28,7 @@ const translateToJapanese = async (text, sourceLang) => {
   }
 };
 
-/* ===================== 手書き修正モーダル ===================== */
-const InkModal = ({ open, onCancel, onSave, initialHint = "" }) => {
-  const canvasRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [fallbackText, setFallbackText] = useState(initialHint);
 
-  useEffect(() => {
-    if (!open) return;
-    const c = canvasRef.current;
-    const ctx = c.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, c.width, c.height);
-    ctx.lineWidth = 10;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = "#6b7280";
-  }, [open]);
-
-  const pos = (e) => {
-    const r = canvasRef.current.getBoundingClientRect();
-    const x = (e.touches?.[0]?.clientX ?? e.clientX) - r.left;
-    const y = (e.touches?.[0]?.clientY ?? e.clientY) - r.top;
-    return { x, y };
-  };
-
-  const onDown = (e) => {
-    e.preventDefault();
-    setIsDrawing(true);
-    const { x, y } = pos(e);
-    const ctx = canvasRef.current.getContext("2d");
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-  };
-  const onMove = (e) => {
-    if (!isDrawing) return;
-    e.preventDefault();
-    const { x, y } = pos(e);
-    const ctx = canvasRef.current.getContext("2d");
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  };
-  const onUp = () => setIsDrawing(false);
-
-  const clear = () => {
-    const c = canvasRef.current;
-    const ctx = c.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, c.width, c.height);
-  };
-
-  if (!open) return null;
-  return (
-    <div style={styles.modalBackdrop}>
-      <div style={styles.modalCard}>
-        <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 18 }}>
-          ✍️ 手書き修正
-        </div>
-        <div style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
-          <canvas
-            ref={canvasRef}
-            width={820}
-            height={270}
-            style={styles.inkCanvas}
-            onMouseDown={onDown}
-            onMouseMove={onMove}
-            onMouseUp={onUp}
-            onMouseLeave={onUp}
-            onTouchStart={onDown}
-            onTouchMove={onMove}
-            onTouchEnd={onUp}
-          />
-          <div style={{ width: 220, display: "flex", flexDirection: "column", gap: 12 }}>
-            <input
-              value={fallbackText}
-              onChange={(e) => setFallbackText(e.target.value)}
-              placeholder="認識文字（任意）"
-              style={styles.textInput}
-            />
-            <button onClick={clear} style={styles.btnGhost}>🧹 クリア</button>
-          </div>
-        </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 16 }}>
-          <button onClick={onCancel} style={styles.btnGhost}>キャンセル</button>
-          <button
-            onClick={() => {
-              const dataUrl = canvasRef.current.toDataURL("image/png");
-              // 手書きデータをimageDataとして渡す
-              onSave({ imageData: dataUrl });
-            }}
-            style={styles.btnPrimary}
-          >
-            修正
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* ===================== キーボード編集モーダル ===================== */
-const KeyboardModal = ({ open, initial, onCancel, onSave }) => {
-  const [val, setVal] = useState(initial || "");
-  useEffect(() => setVal(initial || ""), [initial, open]);
-  if (!open) return null;
-  return (
-    <div style={styles.modalBackdrop}>
-      <div style={styles.modalCard}>
-        <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 18 }}>⌨️ テキスト編集</div>
-        <textarea
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
-          rows={5}
-          style={{ ...styles.textInput, width: "100%", resize: "vertical" }}
-        />
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 16 }}>
-          <button onClick={onCancel} style={styles.btnGhost}>キャンセル</button>
-          <button onClick={() => onSave(val)} style={styles.btnPrimary}>保存</button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 /* ===================== メイン ===================== */
 const ScribbleTranslator = () => {
@@ -174,9 +53,14 @@ const ScribbleTranslator = () => {
   // フローティングボタン座標
   const [floatPos, setFloatPos] = useState(null);
 
-  // 編集モーダル
-  const [openKbd, setOpenKbd] = useState(false);
-  const [openInk, setOpenInk] = useState(false);
+  // インライン編集
+  const [inlineEditMode, setInlineEditMode] = useState(null); // 'keyboard' | 'ink' | null
+  const [inlineEditText, setInlineEditText] = useState('');
+  const [inlineEditPosition, setInlineEditPosition] = useState(null);
+  
+  // 手書き用
+  const inkCanvasRef = useRef(null);
+  const [isInkDrawing, setIsInkDrawing] = useState(false);
 
   // 文字index -> 文節index の逆引きを作成（選択ハイライト/タップ判定を高速化）
   const charToGroup = useMemo(() => {
@@ -233,8 +117,8 @@ const ScribbleTranslator = () => {
     const build = async () => {
       if (!visibleText) {
         setBunsetsuGroups([]);
-        return;
-      }
+          return;
+        }
       if (window.kuromoji) {
         const dicPathCandidates = [
           "./dict/",
@@ -248,7 +132,7 @@ const ScribbleTranslator = () => {
             tokenizer = await new Promise((resolve, reject) => {
               window.kuromoji.builder({ dicPath }).build((err, t) => (err ? reject(err) : resolve(t)));
             });
-            break;
+              break;
           } catch {}
         }
         if (tokenizer) {
@@ -323,7 +207,7 @@ const ScribbleTranslator = () => {
     const pos = [];
     let currentX = margin;
     let currentY = Math.max(30, Math.round(charSize)); // ベースライン
-    let charIndex = 0;
+      let charIndex = 0;
     
     displayText.split("").forEach((ch, i) => {
       if (ch === '\n') {
@@ -467,6 +351,120 @@ const ScribbleTranslator = () => {
       s.has(gIdx) ? s.delete(gIdx) : s.add(gIdx);
       return s;
     });
+  };
+
+  /* ------ 手書きキャンバス初期化 ------ */
+  useEffect(() => {
+    if (inlineEditMode === 'ink' && inkCanvasRef.current) {
+      const canvas = inkCanvasRef.current;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#096FCA';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    }
+  }, [inlineEditMode]);
+
+  /* ------ インライン編集開始 ------ */
+  const startInlineEdit = (mode) => {
+    if (!selectedGroups.size) return;
+    
+    // 選択された文字のテキストを取得
+    let text = '';
+    if (bunsetsuGroups.length > 0) {
+      text = [...selectedGroups].sort((a, b) => a - b)
+        .map(i => bunsetsuGroups[i]?.text ?? '')
+        .join('');
+    } else {
+      text = [...selectedGroups].sort((a, b) => a - b)
+        .map(i => displayText[i] ?? '')
+        .join('');
+    }
+    
+    setInlineEditText(text);
+    setInlineEditMode(mode);
+    setInlineEditPosition(floatPos);
+  };
+
+  /* ------ インライン編集完了 ------ */
+  const finishInlineEdit = () => {
+    if (inlineEditText.trim()) {
+      applyReplace(inlineEditText);
+    }
+    setInlineEditMode(null);
+    setInlineEditText('');
+    setInlineEditPosition(null);
+  };
+
+  /* ------ インライン編集キャンセル ------ */
+  const cancelInlineEdit = () => {
+    setInlineEditMode(null);
+    setInlineEditText('');
+    setInlineEditPosition(null);
+    setIsInkDrawing(false);
+  };
+
+  /* ------ 手書き開始 ------ */
+  const startInkDrawing = (e) => {
+    e.preventDefault();
+    setIsInkDrawing(true);
+    const canvas = inkCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.touches?.[0]?.clientX ?? e.clientX) - rect.left;
+    const y = (e.touches?.[0]?.clientY ?? e.clientY) - rect.top;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  /* ------ 手書き描画 ------ */
+  const drawInk = (e) => {
+    if (!isInkDrawing) return;
+    e.preventDefault();
+    const canvas = inkCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.touches?.[0]?.clientX ?? e.clientX) - rect.left;
+    const y = (e.touches?.[0]?.clientY ?? e.clientY) - rect.top;
+    
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  /* ------ 手書き終了 ------ */
+  const stopInkDrawing = () => {
+    setIsInkDrawing(false);
+  };
+
+  /* ------ 手書きクリア ------ */
+  const clearInk = () => {
+    const canvas = inkCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  };
+
+  /* ------ 手書き認識実行 ------ */
+  const recognizeInk = async () => {
+    try {
+      const canvas = inkCanvasRef.current;
+      const imageData = canvas.toDataURL('image/png');
+      const recognizedText = await recognizeHandwriting(imageData);
+      
+      if (recognizedText) {
+        setInlineEditText(recognizedText);
+        // 手書きモードからキーボードモードに切り替え
+        setInlineEditMode('keyboard');
+      } else {
+        alert('手書き文字を認識できませんでした。もう一度お試しください。');
+      }
+    } catch (error) {
+      console.error('手書き文字認識エラー:', error);
+      alert('手書き文字認識中にエラーが発生しました。');
+    }
   };
 
   /* ------ フローティング（削除/キャンセル）位置 ------ */
@@ -744,21 +742,89 @@ const ScribbleTranslator = () => {
             )}
           </div>
 
-              {/* 選択時のフローティング操作 */}
-              {mode === "selecting" && floatPos && selectedGroups.size > 0 && (
+                            {/* 選択時のフローティング操作 */}
+              {mode === "selecting" && floatPos && selectedGroups.size > 0 && !inlineEditMode && (
                 <div style={{ position: "absolute", left: floatPos.x, top: floatPos.y, display: "flex", gap: 8 }}>
                   <button onClick={handleDelete} style={styles.btnDangerSm}>🗑 削除</button>
-                  <button onClick={() => setOpenKbd(true)} style={styles.btnPrimarySm}>⌨️ キーボード修正</button>
-                  <button onClick={() => setOpenInk(true)} style={styles.btnPrimarySm}>✍️ 手書き修正</button>
+                  <button onClick={() => startInlineEdit('keyboard')} style={styles.btnPrimarySm}>⌨️ キーボード修正</button>
+                  <button onClick={() => startInlineEdit('ink')} style={styles.btnPrimarySm}>✍️ 手書き修正</button>
                   <button onClick={() => setSelectedGroups(new Set())} style={styles.btnGhostSm}>
                     ✖ キャンセル
               </button>
             </div>
           )}
-        </div>
+
+              {/* インライン編集ウィンドウ */}
+              {inlineEditMode && inlineEditPosition && (
+          <div style={{
+                  position: "absolute", 
+                  left: inlineEditPosition.x, 
+                  top: inlineEditPosition.y - 60,
+                  background: "#fff",
+                  border: "2px solid #096FCA",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                  zIndex: 1000,
+                  minWidth: "200px"
+                }}>
+                  {inlineEditMode === 'keyboard' ? (
+                    <div>
+                      <input
+                        type="text"
+                        value={inlineEditText}
+                        onChange={(e) => setInlineEditText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') finishInlineEdit();
+                          if (e.key === 'Escape') cancelInlineEdit();
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "8px",
+                          border: "1px solid #ddd",
+                          borderRadius: "4px",
+                          fontSize: "16px"
+                        }}
+                        autoFocus
+                      />
+                      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                        <button onClick={finishInlineEdit} style={styles.btnPrimarySm}>✓ 保存</button>
+                        <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
+          </div>
+            </div>
+                                    ) : (
+                    <div>
+                      <canvas
+                        ref={inkCanvasRef}
+                        width={300}
+                        height={150}
+                        style={{
+                          border: "1px solid #ddd",
+                          borderRadius: "4px",
+                          background: "#fff",
+                          cursor: "crosshair"
+                        }}
+                        onMouseDown={startInkDrawing}
+                        onMouseMove={drawInk}
+                        onMouseUp={stopInkDrawing}
+                        onMouseLeave={stopInkDrawing}
+                        onTouchStart={startInkDrawing}
+                        onTouchMove={drawInk}
+                        onTouchEnd={stopInkDrawing}
+                      />
+                      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                        <button onClick={recognizeInk} style={styles.btnPrimarySm}>✍️ 認識</button>
+                        <button onClick={clearInk} style={styles.btnGhostSm}>🧹 クリア</button>
+                        <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
+                  </div>
+                  </div>
+                  )}
+                </div>
+              )}
+                      </div>
 
                         {/* 2) 折り返し（日本語） */}
-          <div style={{
+                      <div style={{
               fontSize: 20, 
               marginBottom: 14, 
               opacity: 0.95,
@@ -768,7 +834,7 @@ const ScribbleTranslator = () => {
               letterSpacing: "0.5px"
             }}>
               {triplet.back}
-          </div>
+                      </div>
 
                         {/* 3) 翻訳（選択言語） */}
                   <div style={{
@@ -778,87 +844,20 @@ const ScribbleTranslator = () => {
               color: "#ff0000",
               letterSpacing: "0.5px"
             }}>{triplet.trans}</div>
-                  </div>
+                    </div>
         ) : (
           <div style={styles.empty}>
             まず「🎤 音声入力」で話してから「🗣️ しゃべる→表示」を押してください
-                </div>
-        )}
-            </div>
+              </div>
+            )}
+          </div>
             
               {/* アクセシビリティ：翻訳更新の読み上げ */}
         <div aria-live="polite" aria-atomic="true" style={{position:'absolute', left:-9999, top:'auto'}}>
           {triplet.back} {triplet.trans}
-                      </div>
+      </div>
 
-        {/* モーダル達 */}
-        <KeyboardModal
-        open={openKbd}
-        initial={(() => {
-          if (selectedGroups.size > 0) {
-            if (bunsetsuGroups.length > 0) {
-              // 文節がある場合：選択された文節のテキスト
-              return [...selectedGroups].sort((a, b) => a - b)
-                .map(i => bunsetsuGroups[i]?.text ?? '')
-                .join('');
-            } else {
-              // 文節がない場合：選択された文字のテキスト
-              return [...selectedGroups].sort((a, b) => a - b)
-                .map(i => displayText[i] ?? '')
-                .join('');
-            }
-          }
-          return visibleText;
-        })()}
-        onCancel={() => setOpenKbd(false)}
-        onSave={(val) => {
-          setOpenKbd(false);
-          applyReplace(val);
-        }}
-      />
-      <InkModal
-        open={openInk}
-        onCancel={() => setOpenInk(false)}
-        onSave={async ({ imageData }) => {
-          console.log('手書きデータ受信:', imageData ? 'あり' : 'なし');
-          if (imageData) {
-            try {
-              console.log('手書き文字認識開始...');
-              // 手書き文字認識を実行
-              const recognizedText = await recognizeHandwriting(imageData);
-              console.log('認識結果:', recognizedText);
-              if (recognizedText) {
-                applyReplace(recognizedText);
-              } else {
-                alert('手書き文字を認識できませんでした。もう一度お試しください。');
-              }
-            } catch (error) {
-              console.error('手書き文字認識エラー:', error);
-              alert('手書き文字認識中にエラーが発生しました。');
-            }
-          } else {
-            console.error('手書きデータが受信されませんでした');
-            alert('手書きデータの取得に失敗しました。');
-          }
-          setOpenInk(false);
-        }}
-        initialHint={(() => {
-          if (selectedGroups.size > 0) {
-            if (bunsetsuGroups.length > 0) {
-              // 文節がある場合：選択された文節のテキスト
-              return [...selectedGroups].sort((a, b) => a - b)
-                .map(i => bunsetsuGroups[i]?.text ?? '')
-                .join('');
-            } else {
-              // 文節がない場合：選択された文字のテキスト
-              return [...selectedGroups].sort((a, b) => a - b)
-                .map(i => displayText[i] ?? '')
-                .join('');
-            }
-          }
-          return visibleText;
-        })()}
-      />
+
     </div>
   );
 };
