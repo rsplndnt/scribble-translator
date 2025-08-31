@@ -7,29 +7,65 @@ const truncateText = (text, maxLength = 50) => {
   return text.substring(0, maxLength) + "...";
 };
 
-// CORS対応の無料API（精度より試作用）
-const translateWithMyMemory = async (text, targetLang) => {
+// Google Translate API（高品質翻訳）
+const translateWithGoogle = async (text, targetLang) => {
   try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-      text
-    )}&langpair=ja|${targetLang}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return data?.responseData?.translatedText ?? "";
-  } catch {
+    const apiKey = 'AIzaSyB95StGXctiRdoL2kqU0Jj8O7gGHVkuyNc';
+    const url = `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        q: text,
+        source: 'ja',
+        target: targetLang,
+        format: 'text'
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.data && data.data.translations && data.data.translations[0]) {
+      return data.data.translations[0].translatedText;
+    } else {
+      throw new Error(`翻訳エラー: ${JSON.stringify(data)}`);
+    }
+  } catch (error) {
+    console.error('❌ Google翻訳エラー:', error);
     return "翻訳エラー";
   }
 };
 
 const translateToJapanese = async (text, sourceLang) => {
   try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
-      text
-    )}&langpair=${sourceLang}|ja`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return data?.responseData?.translatedText ?? "";
-  } catch {
+    const apiKey = 'AIzaSyB95StGXctiRdoL2kqU0Jj8O7gGHVkuyNc';
+    const url = `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        q: text,
+        source: sourceLang,
+        target: 'ja',
+        format: 'text'
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.data && data.data.translations && data.data.translations[0]) {
+      return data.data.translations[0].translatedText;
+    } else {
+      throw new Error(`翻訳エラー: ${JSON.stringify(data)}`);
+    }
+  } catch (error) {
+    console.error('❌ Google翻訳エラー:', error);
     return "翻訳エラー";
   }
 };
@@ -228,7 +264,7 @@ const ScribbleTranslator = () => {
       console.log('🔄 翻訳開始:', text, '→', targetLang);
       
       try {
-        const trans = await translateWithMyMemory(text, targetLang);
+        const trans = await translateWithGoogle(text, targetLang);
         console.log('✅ 翻訳完了:', trans);
         
         // 逆翻訳開始
