@@ -579,12 +579,16 @@ const ScribbleTranslator = () => {
     if (inlineEditMode === 'ink' && inkCanvasRef.current) {
       const canvas = inkCanvasRef.current;
       const ctx = canvas.getContext('2d');
-      // 透明背景のためfillRectを削除（キャンバスはデフォルトで透明）
-      ctx.clearRect(0, 0, canvas.width, canvas.height); // クリアのみ
+      // 完全透明背景を確保
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = 'source-over'; // 通常の描画モード
       ctx.strokeStyle = '#096FCA';
-      ctx.lineWidth = 4; // 少し太くして見やすく
+      ctx.lineWidth = 4;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
+      
+      // デバッグ：キャンバスが透明であることを確認
+      console.log('🎨 手書きキャンバス初期化: 透明背景設定完了');
     }
   }, [inlineEditMode]);
 
@@ -650,7 +654,7 @@ const ScribbleTranslator = () => {
       
       editPosition = { 
         x: centerX + offsetX, // 画面座標に変換
-        y: topY + offsetY - 120 // 選択された文字からさらに離して配置（被り回避）
+        y: Math.max(50, topY + offsetY - 200) // 画面上部に十分な余裕を持って配置
       };
     }
     
@@ -1267,6 +1271,9 @@ const ScribbleTranslator = () => {
                   background: "transparent", // 完全透明
                   cursor: "crosshair",
                   touchAction: "none",
+                  opacity: 1, // 透明度を明示的に設定
+                  position: "relative", // 位置を明示的に設定
+                  zIndex: 1, // 低いz-indexで下の文字が見えるように
                 }}
                 onMouseDown={startInkDrawing}
                 onMouseMove={drawInk}
