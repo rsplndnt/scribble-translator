@@ -579,10 +579,10 @@ const ScribbleTranslator = () => {
     if (inlineEditMode === 'ink' && inkCanvasRef.current) {
       const canvas = inkCanvasRef.current;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // 透明背景のためfillRectを削除（キャンバスはデフォルトで透明）
+      ctx.clearRect(0, 0, canvas.width, canvas.height); // クリアのみ
       ctx.strokeStyle = '#096FCA';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 4; // 少し太くして見やすく
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
     }
@@ -650,7 +650,7 @@ const ScribbleTranslator = () => {
       
       editPosition = { 
         x: centerX + offsetX, // 画面座標に変換
-        y: topY + offsetY - 80 // 選択された文字の上に十分な余裕を持って配置
+        y: topY + offsetY - 120 // 選択された文字からさらに離して配置（被り回避）
       };
     }
     
@@ -726,8 +726,8 @@ const ScribbleTranslator = () => {
   const clearInk = () => {
     const canvas = inkCanvasRef.current;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // 透明背景を維持するため、白い背景の塗りつぶしを削除
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
   /* ------ 手書き認識実行 ------ */
@@ -1250,12 +1250,13 @@ const ScribbleTranslator = () => {
                 style={{
                   width: window.innerWidth <= 768 ? "100%" : "300px",
                   height: window.innerWidth <= 768 ? "140px" : "150px",
-                  border: "1px solid rgba(9, 111, 202, 0.2)", // プライマリーカラーの薄いボーダー
+                  border: "1px solid rgba(9, 111, 202, 0.3)", // プライマリーカラーの薄いボーダー
                   borderRadius: "8px", // Goodpatch: 角丸
-                  background: "rgba(255, 255, 255, 0.9)", // 透過白背景
+                  background: "rgba(255, 255, 255, 0.2)", // 高透過度で下の文字が見える
                   cursor: "crosshair",
                   touchAction: "none",
                   boxShadow: "inset 0 1px 3px rgba(0,0,0,0.05)", // Goodpatch: 内側の軽いシャドウ
+                  backdropFilter: "blur(2px)", // 背景ぼかし効果
                 }}
                 onMouseDown={startInkDrawing}
                 onMouseMove={drawInk}
