@@ -76,7 +76,7 @@ const ScribbleTranslator = () => {
   /* ------ 文字スタイル（太字+縁取り） ------ */
   const outline = {
     fontWeight: 800,
-    WebkitTextStroke: "2px #FFFFFF",
+    // WebkitTextStrokeを削除（SVGで代替）
     textShadow:
       "-2px -2px 0 #FFFFFF, 2px -2px 0 #FFFFFF, -2px 2px 0 #FFFFFF, 2px 2px 0 #FFFFFF, 0 3px 12px rgba(0,0,0,.28)",
     color: "#374151",
@@ -1031,29 +1031,41 @@ const ScribbleTranslator = () => {
               {tilePositions.map((c) => {
                 const gIdx = bunsetsuGroups.length > 0 ? charToGroup.get(c.index) : c.index;
                 const selected = gIdx !== undefined && selectedGroups.has(gIdx);
-                  return (
-                  <span
+                return (
+                  <svg
                     key={c.id}
                     onClick={() => toggleGroupByIndex(c.index)}
-                      style={{
+                    style={{
                       position: "absolute",
                       left: `${c.x}px`,
                       top: `${c.y}px`,
                       transform: "translate(-50%,-50%)",
-                      fontSize: c.charSize,
-                      fontWeight: 800,
-                      WebkitTextStroke: "1.5px #FFFFFF",
-                      color: "#ff0000",
-                      letterSpacing: "0.5px",
                       cursor: "pointer",
                       backgroundColor: selected ? "rgba(9, 111, 202, 0.2)" : "transparent",
                       borderRadius: selected ? "4px" : "0px",
                       padding: selected ? "2px 4px" : "0px",
                       borderBottom: selected ? "3px solid #096FCA" : "none",
                     }}
+                    width={c.charSize * 1.2}
+                    height={c.charSize * 1.2}
+                    viewBox={`0 0 ${c.charSize * 1.2} ${c.charSize * 1.2}`}
                   >
-                    {c.char === " " ? "\u00A0" : c.char}
-                  </span>
+                    <text
+                      x="50%"
+                      y="50%"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fontSize={c.charSize}
+                      fontWeight="800"
+                      fill="#ff0000"
+                      stroke="#FFFFFF"
+                      strokeWidth="3"
+                      paintOrder="stroke fill"
+                      letterSpacing="0.5px"
+                    >
+                      {c.char === " " ? "\u00A0" : c.char}
+                    </text>
+                  </svg>
                 );
               })}
 
@@ -1113,21 +1125,47 @@ const ScribbleTranslator = () => {
               marginBottom: 14, 
               opacity: 0.95,
               fontWeight: 800,
-              WebkitTextStroke: "1px #FFFFFF",
-              color: "#ff0000",
               letterSpacing: "0.5px"
             }}>
-              {triplet.back}
+              <svg width="100%" height="30" viewBox="0 0 800 30">
+                <text
+                  x="0"
+                  y="20"
+                  fontSize="20"
+                  fontWeight="800"
+                  fill="#ff0000"
+                  stroke="#FFFFFF"
+                  strokeWidth="2"
+                  paintOrder="stroke fill"
+                  letterSpacing="0.5px"
+                >
+                  {triplet.back}
+                </text>
+              </svg>
             </div>
             
                         {/* 3) 翻訳（選択言語） */}
                       <div style={{
               fontSize: 42,
               fontWeight: 800,
-              WebkitTextStroke: "1.5px #FFFFFF",
-              color: "#ff0000",
               letterSpacing: "0.5px"
-            }}>{triplet.trans}</div>
+            }}>
+              <svg width="100%" height="60" viewBox="0 0 800 60">
+                <text
+                  x="0"
+                  y="40"
+                  fontSize="42"
+                  fontWeight="800"
+                  fill="#ff0000"
+                  stroke="#FFFFFF"
+                  strokeWidth="3"
+                  paintOrder="stroke fill"
+                  letterSpacing="0.5px"
+                >
+                  {triplet.trans}
+                </text>
+              </svg>
+            </div>
                       </div>
         ) : (
           <div style={styles.empty}>
