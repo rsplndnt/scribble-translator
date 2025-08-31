@@ -46,7 +46,7 @@ const ScribbleTranslator = () => {
   const [triplet, setTriplet] = useState({ src: "", back: "", trans: "" }); // 上/中/下
   const [bunsetsuGroups, setBunsetsuGroups] = useState([]); // {indices:number[], text:string}
   const [selectedGroups, setSelectedGroups] = useState(new Set()); // 文節インデックス
-  const [isBunsetsuMode, setIsBunsetsuMode] = useState(true); // 文節認識モード
+  const [isBunsetsuMode, setIsBunsetsuMode] = useState(false); // 文節認識モード（デフォルトOFF）
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
 
@@ -393,12 +393,12 @@ const ScribbleTranslator = () => {
           });
         }
     } else {
-        // 文字モード：文字単位で選択
+        // 文字モード：文字単位で選択（トグルではなく追加のみ）
         setSelectedGroups((prev) => {
           const s = new Set(prev);
-          // 触れた文字のインデックスをトグル
+          // 触れた文字を全て選択状態にする（既に選択済みでもそのまま）
           touchedIndex.forEach((charIndex) => {
-            s.has(charIndex) ? s.delete(charIndex) : s.add(charIndex);
+            s.add(charIndex);
           });
           return s;
         });
