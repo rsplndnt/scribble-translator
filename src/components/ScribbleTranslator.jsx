@@ -1638,7 +1638,7 @@ const ScribbleTranslator = () => {
               alignItems: "center",
               marginBottom: "20px",
             }}>
-              <h3 style={{ margin: 0, color: "#374151" }}>🎤 音声認識履歴（ボタンで操作）</h3>
+              <h3 style={{ margin: 0, color: "#374151" }}>🎤 入力履歴（上書き挿入）</h3>
               <button 
                 onClick={() => setShowHistory(false)}
                 style={{
@@ -1666,7 +1666,7 @@ const ScribbleTranslator = () => {
                   backgroundColor: "#F3F4F6",
                   borderRadius: "6px"
                 }}>
-                  💡 各履歴項目のボタンで操作を選択してください
+                  💡 各履歴項目のボタンで上書き挿入できます
                 </p>
               <ul style={{ 
                 listStyle: "none", 
@@ -1745,13 +1745,16 @@ const ScribbleTranslator = () => {
                       gap: "8px",
                       justifyContent: "flex-end"
                     }}>
-                      {/* 挿入ボタン */}
+                      {/* 上書き挿入ボタン */}
                       <button
                         onClick={() => {
-                          console.log('履歴挿入ボタンクリック:', { item, currentText: currentText });
-                          setCurrentText(prev => prev + item.text); // 既存テキストに追加
+                          console.log('履歴上書き挿入ボタンクリック:', { item, currentText: currentText });
+                          setCurrentText(item.text); // 既存テキストを上書き
+                          setVisibleText(item.text); // 表示テキストも即座に更新
+                          setSelectedGroups(new Set()); // 選択状態をリセット
+                          setMode("shown"); // 表示モードに切り替え
                           setShowHistory(false);
-                          console.log('履歴挿入完了:', { item });
+                          console.log('履歴上書き挿入完了:', { item });
                         }}
                         style={{
                           padding: "6px 12px",
@@ -1773,42 +1776,10 @@ const ScribbleTranslator = () => {
                           e.target.style.transform = "translateY(0)";
                         }}
                       >
-                        ➕ 挿入
+                        🔄 上書き挿入
                       </button>
                       
-                      {/* 置換ボタン */}
-                      <button
-                        onClick={() => {
-                          console.log('履歴置換ボタンクリック:', { item, currentText: currentText });
-                          setCurrentText(item.text); // 原文を上書き更新
-                          setVisibleText(item.text); // 表示テキストも即座に更新
-                          setSelectedGroups(new Set()); // 選択状態をリセット
-                          setMode("shown"); // 表示モードに切り替え
-                          setShowHistory(false);
-                          console.log('履歴置換完了:', { item });
-                        }}
-                        style={{
-                          padding: "6px 12px",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          backgroundColor: "#FF7669",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = "#E55A4D";
-                          e.target.style.transform = "translateY(-1px)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = "#FF7669";
-                          e.target.style.transform = "translateY(0)";
-                        }}
-                      >
-                        🔄 置換
-                      </button>
+
                     </div>
                   </li>
                 ))}
