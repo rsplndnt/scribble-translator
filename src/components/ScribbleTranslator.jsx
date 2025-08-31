@@ -479,7 +479,15 @@ const ScribbleTranslator = () => {
   /* ------ インライン編集完了 ------ */
   const finishInlineEdit = () => {
     if (inlineEditText.trim()) {
-      applyReplace(inlineEditText);
+      // 最初の入力時（visibleTextがない場合）は直接設定
+      if (!visibleText) {
+        setCurrentText(inlineEditText.trim());
+        setVisibleText(inlineEditText.trim());
+        setMode("shown");
+      } else {
+        // 既存のテキストがある場合は置換
+        applyReplace(inlineEditText);
+      }
     }
     setInlineEditMode(null);
     setInlineEditText('');
@@ -768,11 +776,31 @@ const ScribbleTranslator = () => {
             <option value="ko">韓国語</option>
             <option value="zh">中国語</option>
           </select>
-          <button onClick={() => setOpenKbd(true)} style={styles.btnGhost}>
-            ⌨️ キーボード編集
-            </button>
-          <button onClick={() => setOpenInk(true)} style={styles.btnGhost}>
-            ✍️ 手書き編集
+          <button 
+            onClick={() => {
+              setInlineEditMode('keyboard');
+              setInlineEditText('');
+              // 画面中央付近に配置
+              const centerX = window.innerWidth / 2 - 100;
+              const centerY = window.innerHeight / 2 - 100;
+              setInlineEditPosition({ x: centerX, y: centerY });
+            }} 
+            style={styles.btnGhost}
+          >
+            ⌨️ キーボード入力
+          </button>
+          <button 
+            onClick={() => {
+              setInlineEditMode('ink');
+              setInlineEditText('');
+              // 画面中央付近に配置
+              const centerX = window.innerWidth / 2 - 100;
+              const centerY = window.innerHeight / 2 - 100;
+              setInlineEditPosition({ x: centerX, y: centerY });
+            }} 
+            style={styles.btnGhost}
+          >
+            ✍️ 手書き入力
           </button>
           <button
             onClick={() => {
