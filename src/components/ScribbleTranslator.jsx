@@ -1125,13 +1125,13 @@ const ScribbleTranslator = () => {
               opacity: 0.95,
               fontWeight: 800,
               letterSpacing: "0.5px",
-              textAlign: "center"
+              textAlign: "left"
             }}>
-              <svg width="100%" height="30" preserveAspectRatio="xMidYMid meet">
+              <svg width="100%" height="30" preserveAspectRatio="xMinYMid meet">
                 <text
-                  x="50%"
+                  x="20"
                   y="20"
-                  textAnchor="middle"
+                  textAnchor="start"
                   dominantBaseline="middle"
                   fontSize="clamp(16px, 4vw, 20px)"
                   fontWeight="800"
@@ -1150,13 +1150,13 @@ const ScribbleTranslator = () => {
                       <div style={{
               fontWeight: 800,
               letterSpacing: "0.5px",
-              textAlign: "center"
+              textAlign: "left"
             }}>
-              <svg width="100%" height="60" preserveAspectRatio="xMidYMid meet">
+              <svg width="100%" height="60" preserveAspectRatio="xMinYMid meet">
                 <text
-                  x="50%"
+                  x="20"
                   y="40"
-                  textAnchor="middle"
+                  textAnchor="start"
                   dominantBaseline="middle"
                   fontSize="clamp(24px, 8vw, 42px)"
                   fontWeight="800"
