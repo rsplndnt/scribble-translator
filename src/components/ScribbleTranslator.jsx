@@ -670,7 +670,7 @@ const ScribbleTranslator = () => {
     }).filter(Boolean);
     if (!pts.length) return;
     const x = Math.max(...pts.map((p) => p.x)) + 10;
-    const y = Math.max(...pts.map((p) => p.y)) + 26;
+    const y = Math.max(...pts.map((p) => p.y)) + 35; // ボタンの当たり判定に合わせて調整
     setFloatPos({ x, y });
   }, [selectedGroups, bunsetsuGroups, tilePositions]);
 
@@ -1106,15 +1106,23 @@ const ScribbleTranslator = () => {
 
                             {/* 選択時のフローティング操作 */}
               {mode === "selecting" && floatPos && selectedGroups.size > 0 && !inlineEditMode && (
-                <div style={{ position: "absolute", left: floatPos.x, top: floatPos.y, display: "flex", gap: 8 }}>
+                <div style={{ 
+                  position: "absolute", 
+                  left: floatPos.x, 
+                  top: floatPos.y, 
+                  display: "flex", 
+                  gap: 8,
+                  zIndex: 1000,
+                  pointerEvents: "auto"
+                }}>
                   <button onClick={handleDelete} style={styles.btnDangerSm}>🗑 削除</button>
                   <button onClick={() => startInlineEdit('keyboard')} style={styles.btnPrimarySm}>⌨️ キーボード修正</button>
                   <button onClick={() => startInlineEdit('ink')} style={styles.btnPrimarySm}>✍️ 手書き修正</button>
                   <button onClick={() => setSelectedGroups(new Set())} style={styles.btnGhostSm}>
                     ✖ キャンセル
-              </button>
-            </div>
-          )}
+                  </button>
+                </div>
+              )}
 
 
             </div>
@@ -1394,30 +1402,42 @@ const styles = {
     cursor: "pointer",
   },
   btnGhostSm: {
-    padding: "6px 10px",
+    padding: "8px 12px",
     border: "1px solid #e5e7eb",
     background: "#fff",
     borderRadius: 8,
     fontWeight: 700,
     cursor: "pointer",
+    minHeight: "32px",
+    minWidth: "80px",
+    userSelect: "none",
+    touchAction: "manipulation",
   },
   btnDangerSm: {
-    padding: "6px 10px",
+    padding: "8px 12px",
     border: "none",
     background: "#ef4444",
     color: "#fff",
     borderRadius: 8,
     fontWeight: 700,
     cursor: "pointer",
+    minHeight: "32px",
+    minWidth: "80px",
+    userSelect: "none",
+    touchAction: "manipulation",
   },
   btnPrimarySm: {
-    padding: "6px 10px",
+    padding: "8px 12px",
     border: "none",
     background: "#096FCA",
     color: "#fff",
     borderRadius: 8,
     fontWeight: 700,
     cursor: "pointer",
+    minHeight: "32px",
+    minWidth: "80px",
+    userSelect: "none",
+    touchAction: "manipulation",
   },
 };
 
