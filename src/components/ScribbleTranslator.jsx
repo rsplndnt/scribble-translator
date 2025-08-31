@@ -1369,7 +1369,7 @@ const ScribbleTranslator = () => {
             fontFamily: 'monospace',
             marginLeft: '8px',
           }}>
-            🎯 {lastScribbleResult ? '●' : '○'} {lastScribbleRatio ? lastScribbleRatio.toFixed(2) : '0.00'}
+            🎯 {lastScribbleResult ? '●' : '○'} {lastScribbleRatio ? lastScribbleRatio.toFixed(2) : '0.00'} &gt;2.0
           </span>
         </div>
       </div>
