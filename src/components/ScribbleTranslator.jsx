@@ -345,7 +345,7 @@ const ScribbleTranslator = () => {
     }
     
     // デバッグ用：一時的に折り返し検出を無効化
-    const debugMode = true; // デバッグモード（trueで折り返し検出を無効化）
+    const debugMode = false; // デバッグモード（falseで正常な判定を有効化）
     
     if (!debugMode && !hasChanges) {
       console.log('直線的すぎる線のため、選択をキャンセル');
