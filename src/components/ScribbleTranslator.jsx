@@ -95,6 +95,8 @@ const ScribbleTranslator = () => {
   const [showHistory, setShowHistory] = useState(false); // 履歴表示フラグ
   const [selectedInputMethod, setSelectedInputMethod] = useState('voice'); // 選択された入力方式
   const [showInputDropdown, setShowInputDropdown] = useState(false); // 入力方式ドロップダウンの表示状態
+  const [lastScribbleResult, setLastScribbleResult] = useState(false); // 最後のぐしゃぐしゃ判定結果
+  const [lastScribbleRatio, setLastScribbleRatio] = useState(0); // 最後のぐしゃぐしゃ判定の曲率比
 
   // タイル描画
   const topRef = useRef(null);
@@ -617,6 +619,10 @@ const ScribbleTranslator = () => {
     
     console.log(`判定結果: ${isScribble} (${curvatureRatio.toFixed(3)} >= ${scribbleThreshold})`);
     console.log('=== 曲率ベース判定終了 ===');
+    
+    // 判定結果を保存（開発者用インジケーター表示のため）
+    setLastScribbleResult(isScribble);
+    setLastScribbleRatio(curvatureRatio);
     
     return isScribble;
   };
@@ -1350,8 +1356,21 @@ const ScribbleTranslator = () => {
           {isListening ? (
             <span style={styles.listeningIndicator}>🎤 音声入力中…</span>
           ) : (
-                          <span style={styles.textCount}>📝 {currentText.length}文字</span>
+            <span style={styles.textCount}>📝 {currentText.length}文字</span>
           )}
+          
+          {/* ぐしゃぐしゃ判定結果インジケーター（開発者用） */}
+          <span style={{
+            fontSize: '12px',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            backgroundColor: 'rgba(0, 0, 0, 0.1)',
+            color: '#374151',
+            fontFamily: 'monospace',
+            marginLeft: '8px',
+          }}>
+            🎯 {lastScribbleResult ? '●' : '○'} {lastScribbleRatio ? lastScribbleRatio.toFixed(2) : '0.00'}
+          </span>
         </div>
       </div>
 
