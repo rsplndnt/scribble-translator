@@ -1273,8 +1273,8 @@ const ScribbleTranslator = () => {
             )}
           </div>
           
-                      {/* 音声入力選択時のみ表示ボタンを表示 */}
-            {selectedInputMethod === 'voice' && (
+                      {/* 音声入力した言葉があるときのみ表示ボタンを表示 */}
+            {selectedInputMethod === 'voice' && currentText && currentText.trim() && (
               <button 
                 onClick={() => {
                   setVisibleText(currentText);
