@@ -117,27 +117,14 @@ const ScribbleTranslator = () => {
     style.textContent = keyframes;
     document.head.appendChild(style);
     
-    // Material Symbolsのスタイルを追加
+    // Material Iconsのスタイルを追加（必要に応じて）
     const materialStyle = document.createElement('style');
     materialStyle.textContent = `
-      .material-symbols-outlined {
-        font-variation-settings:
-          'FILL' 0,
-          'wght' 400,
-          'GRAD' 0,
-          'opsz' 24;
-        font-family: 'Material Symbols Outlined';
-        font-weight: normal;
-        font-style: normal;
+      /* 絵文字用のスタイル */
+      .emoji-icon {
         font-size: 20px;
-        line-height: 1;
-        display: inline-block;
-        text-transform: none;
-        letter-spacing: normal;
-        white-space: nowrap;
-        direction: ltr;
-        vertical-align: middle;
         margin-right: 4px;
+        vertical-align: middle;
       }
     `;
     document.head.appendChild(materialStyle);
@@ -905,7 +892,7 @@ const ScribbleTranslator = () => {
               overflow: 'hidden',
             }}
           >
-            {isListening ? <><span className="material-symbols-outlined">stop</span> 停止</> : <><span className="material-symbols-outlined">mic</span> 音声入力</>}
+            {isListening ? "⏹ 停止" : "🎤 音声入力"}
             
             {/* ほわほわする波紋エフェクト */}
             {isListening && (
@@ -954,7 +941,7 @@ const ScribbleTranslator = () => {
             }}
             style={styles.btnPurple}
           >
-            <span className="material-symbols-outlined">visibility</span> 表示
+            🗣️ 表示
             </button>
           <button
             onClick={() => {
@@ -964,7 +951,7 @@ const ScribbleTranslator = () => {
             }}
             style={styles.btnGhost}
           >
-            <span className="material-symbols-outlined">refresh</span> リセット
+            🔄 リセット
           </button>
       </div>
 
@@ -987,7 +974,7 @@ const ScribbleTranslator = () => {
             }} 
             style={styles.btnGhost}
           >
-            <span className="material-symbols-outlined">keyboard</span> キーボード
+            ⌨️ キーボード
           </button>
           <button 
             onClick={() => {
@@ -1006,7 +993,7 @@ const ScribbleTranslator = () => {
             }} 
             style={styles.btnGhost}
           >
-            <span className="material-symbols-outlined">edit</span> 手書き
+            ✍️ 手書き
           </button>
           
           {/* 文節認識のラジオボタン */}
@@ -1042,7 +1029,7 @@ const ScribbleTranslator = () => {
                 }}
                 style={{ display: 'none' }}
               />
-              <span className="material-symbols-outlined">smart_toy</span> 文節認識ON
+              🤖 文節認識ON
             </label>
             
             <label style={{
@@ -1068,7 +1055,7 @@ const ScribbleTranslator = () => {
                 }}
                 style={{ display: 'none' }}
               />
-              <span className="material-symbols-outlined">text_fields</span> 文節認識OFF
+              🔤 文節認識OFF
             </label>
                     </div>
           </div>
@@ -1087,9 +1074,9 @@ const ScribbleTranslator = () => {
           </select>
           
           {isListening ? (
-            <span style={styles.listeningIndicator}><span className="material-symbols-outlined">mic</span> 音声入力中…</span>
+            <span style={styles.listeningIndicator}>🎤 音声入力中…</span>
           ) : (
-                          <span style={styles.textCount}><span className="material-symbols-outlined">description</span> {currentText.length}文字</span>
+                          <span style={styles.textCount}>📝 {currentText.length}文字</span>
           )}
         </div>
           </div>
@@ -1180,8 +1167,8 @@ const ScribbleTranslator = () => {
                 gap: window.innerWidth <= 768 ? 6 : 8, 
                 marginTop: 12 
               }}>
-                                      <button onClick={finishInlineEdit} style={styles.btnPrimarySm}><span className="material-symbols-outlined">check</span> 保存</button>
-                      <button onClick={cancelInlineEdit} style={styles.btnGhostSm}><span className="material-symbols-outlined">close</span> キャンセル</button>
+                                      <button onClick={finishInlineEdit} style={styles.btnPrimarySm}>✓ 保存</button>
+                      <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
           </div>
             </div>
           ) : (
@@ -1213,9 +1200,9 @@ const ScribbleTranslator = () => {
                 gap: window.innerWidth <= 768 ? 6 : 8, 
                 marginTop: 8 
               }}>
-                                      <button onClick={recognizeInk} style={styles.btnPrimarySm}><span className="material-symbols-outlined">edit</span> 認識</button>
-                      <button onClick={clearInk} style={styles.btnGhostSm}><span className="material-symbols-outlined">cleaning_services</span> クリア</button>
-                      <button onClick={cancelInlineEdit} style={styles.btnGhostSm}><span className="material-symbols-outlined">close</span> キャンセル</button>
+                                      <button onClick={recognizeInk} style={styles.btnPrimarySm}>✍️ 認識</button>
+                      <button onClick={clearInk} style={styles.btnGhostSm}>🧹 クリア</button>
+                      <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
                   </div>
                 </div>
           )}
@@ -1322,11 +1309,11 @@ const ScribbleTranslator = () => {
                     top: Math.max(10, Math.min(floatPos.y, window.innerHeight - 200)),
                   },
                 }}>
-                                    <button onClick={handleDelete} style={styles.btnDangerSm}><span className="material-symbols-outlined">delete</span> 削除</button>
-                  <button onClick={() => startInlineEdit('keyboard')} style={styles.btnPrimarySm}><span className="material-symbols-outlined">keyboard</span> キーボード修正</button>
-                  <button onClick={() => startInlineEdit('ink')} style={styles.btnPrimarySm}><span className="material-symbols-outlined">edit</span> 手書き修正</button>
+                                    <button onClick={handleDelete} style={styles.btnDangerSm}>🗑 削除</button>
+                  <button onClick={() => startInlineEdit('keyboard')} style={styles.btnPrimarySm}>⌨️ キーボード修正</button>
+                  <button onClick={() => startInlineEdit('ink')} style={styles.btnPrimarySm}>✍️ 手書き修正</button>
                   <button onClick={() => setSelectedGroups(new Set())} style={styles.btnGhostSm}>
-                    <span className="material-symbols-outlined">close</span> キャンセル
+                    ✖ キャンセル
                   </button>
                 </div>
               )}
@@ -1390,7 +1377,7 @@ const ScribbleTranslator = () => {
                 </div>
         ) : (
           <div style={styles.empty}>
-            まず「<span className="material-symbols-outlined">mic</span> 音声入力」で話してから「<span className="material-symbols-outlined">visibility</span> しゃべる→表示」を押してください
+            まず「🎤 音声入力」で話してから「🗣️ しゃべる→表示」を押してください
               </div>
             )}
           </div>
