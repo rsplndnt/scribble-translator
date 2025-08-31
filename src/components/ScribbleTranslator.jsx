@@ -921,21 +921,17 @@ const ScribbleTranslator = () => {
       {inlineEditMode && inlineEditPosition && (
         <div style={{
           position: "fixed", 
-          left: inlineEditPosition.x, 
-          top: inlineEditPosition.y - 60,
+          left: window.innerWidth <= 768 ? "5vw" : inlineEditPosition.x, 
+          top: window.innerWidth <= 768 ? "20vh" : inlineEditPosition.y - 60,
+          right: window.innerWidth <= 768 ? "5vw" : "auto",
           background: "#fff",
           border: "2px solid #096FCA",
           borderRadius: "8px",
-          padding: "16px",
+          padding: window.innerWidth <= 768 ? "16px" : "16px",
           boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
           zIndex: 1000,
-          minWidth: "450px",
-          "@media (max-width: 768px)": {
-            minWidth: "90vw",
-            left: "5vw",
-            right: "5vw",
-            padding: "12px",
-          },
+          minWidth: window.innerWidth <= 768 ? "90vw" : "450px",
+          maxWidth: window.innerWidth <= 768 ? "90vw" : "600px",
         }}>
           {inlineEditMode === 'keyboard' ? (
             <div>
@@ -969,25 +965,26 @@ const ScribbleTranslator = () => {
                   }
                 }}
                 style={{
-                  width: "400px",
-                  height: "120px",
+                  width: window.innerWidth <= 768 ? "100%" : "400px",
+                  height: window.innerWidth <= 768 ? "120px" : "120px",
                   padding: "12px",
                   border: "1px solid #ddd",
                   borderRadius: "6px",
                   fontSize: "16px",
                   lineHeight: "1.5",
-                  resize: "both",
+                  resize: window.innerWidth <= 768 ? "none" : "both",
                   fontFamily: "inherit",
-                  "@media (max-width: 768px)": {
-                    width: "100%",
-                    height: "100px",
-                    fontSize: "16px",
-                  },
+                  minHeight: window.innerWidth <= 768 ? "120px" : "120px",
                 }}
                 placeholder="テキストを入力してください..."
                 autoFocus
               />
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <div style={{ 
+                display: "flex", 
+                flexDirection: window.innerWidth <= 768 ? "column" : "row",
+                gap: window.innerWidth <= 768 ? 6 : 8, 
+                marginTop: 12 
+              }}>
                 <button onClick={finishInlineEdit} style={styles.btnPrimarySm}>✓ 保存</button>
                 <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
               </div>
@@ -996,13 +993,16 @@ const ScribbleTranslator = () => {
             <div>
               <canvas
                 ref={inkCanvasRef}
-                width={300}
-                height={150}
+                width={window.innerWidth <= 768 ? 280 : 300}
+                height={window.innerWidth <= 768 ? 140 : 150}
                 style={{
+                  width: window.innerWidth <= 768 ? "100%" : "300px",
+                  height: window.innerWidth <= 768 ? "140px" : "150px",
                   border: "1px solid #ddd",
                   borderRadius: "4px",
                   background: "#fff",
-                  cursor: "crosshair"
+                  cursor: "crosshair",
+                  touchAction: "none",
                 }}
                 onMouseDown={startInkDrawing}
                 onMouseMove={drawInk}
@@ -1012,7 +1012,12 @@ const ScribbleTranslator = () => {
                 onTouchMove={drawInk}
                 onTouchEnd={stopInkDrawing}
               />
-              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <div style={{ 
+                display: "flex", 
+                flexDirection: window.innerWidth <= 768 ? "column" : "row",
+                gap: window.innerWidth <= 768 ? 6 : 8, 
+                marginTop: 8 
+              }}>
                 <button onClick={recognizeInk} style={styles.btnPrimarySm}>✍️ 認識</button>
                 <button onClick={clearInk} style={styles.btnGhostSm}>🧹 クリア</button>
                 <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
@@ -1111,9 +1116,16 @@ const ScribbleTranslator = () => {
                   left: floatPos.x, 
                   top: floatPos.y, 
                   display: "flex", 
+                  flexDirection: window.innerWidth <= 768 ? "column" : "row",
                   gap: 8,
                   zIndex: 1000,
-                  pointerEvents: "auto"
+                  pointerEvents: "auto",
+                  "@media (max-width: 768px)": {
+                    flexDirection: "column",
+                    gap: 6,
+                    left: Math.max(10, Math.min(floatPos.x, window.innerWidth - 200)),
+                    top: Math.max(10, Math.min(floatPos.y, window.innerHeight - 200)),
+                  },
                 }}>
                   <button onClick={handleDelete} style={styles.btnDangerSm}>🗑 削除</button>
                   <button onClick={() => startInlineEdit('keyboard')} style={styles.btnPrimarySm}>⌨️ キーボード修正</button>
