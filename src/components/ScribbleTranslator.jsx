@@ -111,6 +111,17 @@ const ScribbleTranslator = () => {
     }
   }, []);
 
+  // アニメーション用のスタイルシートを追加
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = keyframes;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   const toggleMic = () => {
     if (!recognition) return alert("ブラウザが音声認識に対応していません");
     if (isListening) {
@@ -1415,16 +1426,7 @@ const keyframes = `
   }
 `;
 
-// スタイルシートにアニメーションを追加
-useEffect(() => {
-  const style = document.createElement('style');
-  style.textContent = keyframes;
-  document.head.appendChild(style);
-  
-  return () => {
-    document.head.removeChild(style);
-  };
-}, []);
+
 
 const styles = {
   container: {
