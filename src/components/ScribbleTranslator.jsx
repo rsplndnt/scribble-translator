@@ -879,7 +879,7 @@ const ScribbleTranslator = () => {
               overflow: 'hidden',
             }}
           >
-            {isListening ? "⏹ 停止" : "🎤 音声入力"}
+            {isListening ? "stop 停止" : "mic 音声入力"}
             
             {/* ほわほわする波紋エフェクト */}
             {isListening && (
@@ -928,7 +928,7 @@ const ScribbleTranslator = () => {
             }}
             style={styles.btnPurple}
           >
-            🗣️ 表示
+            visibility 表示
             </button>
           <button
             onClick={() => {
@@ -938,7 +938,7 @@ const ScribbleTranslator = () => {
             }}
             style={styles.btnGhost}
           >
-            🔄 リセット
+            refresh リセット
           </button>
       </div>
 
@@ -961,7 +961,7 @@ const ScribbleTranslator = () => {
             }} 
             style={styles.btnGhost}
           >
-            ⌨️ キーボード
+            keyboard キーボード
           </button>
           <button 
             onClick={() => {
@@ -980,7 +980,7 @@ const ScribbleTranslator = () => {
             }} 
             style={styles.btnGhost}
           >
-            ✍️ 手書き
+            edit 手書き
           </button>
           
           {/* 文節認識のラジオボタン */}
@@ -1016,7 +1016,7 @@ const ScribbleTranslator = () => {
                 }}
                 style={{ display: 'none' }}
               />
-              🤖 文節認識ON
+              smart_toy 文節認識ON
             </label>
             
             <label style={{
@@ -1042,7 +1042,7 @@ const ScribbleTranslator = () => {
                 }}
                 style={{ display: 'none' }}
               />
-              🔤 文節認識OFF
+              text_fields 文節認識OFF
             </label>
                     </div>
           </div>
@@ -1061,9 +1061,9 @@ const ScribbleTranslator = () => {
           </select>
           
           {isListening ? (
-            <span style={styles.listeningIndicator}>🎤 音声入力中…</span>
+            <span style={styles.listeningIndicator}>mic 音声入力中…</span>
           ) : (
-            <span style={styles.textCount}>📝 {currentText.length}文字</span>
+                          <span style={styles.textCount}>description {currentText.length}文字</span>
           )}
         </div>
           </div>
@@ -1154,8 +1154,8 @@ const ScribbleTranslator = () => {
                 gap: window.innerWidth <= 768 ? 6 : 8, 
                 marginTop: 12 
               }}>
-                <button onClick={finishInlineEdit} style={styles.btnPrimarySm}>✓ 保存</button>
-                <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
+                                      <button onClick={finishInlineEdit} style={styles.btnPrimarySm}>check 保存</button>
+                      <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>close キャンセル</button>
           </div>
             </div>
           ) : (
@@ -1187,9 +1187,9 @@ const ScribbleTranslator = () => {
                 gap: window.innerWidth <= 768 ? 6 : 8, 
                 marginTop: 8 
               }}>
-                <button onClick={recognizeInk} style={styles.btnPrimarySm}>✍️ 認識</button>
-                <button onClick={clearInk} style={styles.btnGhostSm}>🧹 クリア</button>
-                <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
+                                      <button onClick={recognizeInk} style={styles.btnPrimarySm}>edit 認識</button>
+                      <button onClick={clearInk} style={styles.btnGhostSm}>cleaning_services クリア</button>
+                      <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>close キャンセル</button>
                   </div>
                 </div>
           )}
@@ -1296,12 +1296,12 @@ const ScribbleTranslator = () => {
                     top: Math.max(10, Math.min(floatPos.y, window.innerHeight - 200)),
                   },
                 }}>
-                  <button onClick={handleDelete} style={styles.btnDangerSm}>🗑 削除</button>
-                  <button onClick={() => startInlineEdit('keyboard')} style={styles.btnPrimarySm}>⌨️ キーボード修正</button>
-                  <button onClick={() => startInlineEdit('ink')} style={styles.btnPrimarySm}>✍️ 手書き修正</button>
+                                    <button onClick={handleDelete} style={styles.btnDangerSm}>delete 削除</button>
+                  <button onClick={() => startInlineEdit('keyboard')} style={styles.btnPrimarySm}>keyboard キーボード修正</button>
+                  <button onClick={() => startInlineEdit('ink')} style={styles.btnPrimarySm}>edit 手書き修正</button>
                   <button onClick={() => setSelectedGroups(new Set())} style={styles.btnGhostSm}>
-                    ✖ キャンセル
-              </button>
+                    close キャンセル
+                  </button>
                 </div>
               )}
 
@@ -1364,7 +1364,7 @@ const ScribbleTranslator = () => {
                 </div>
         ) : (
           <div style={styles.empty}>
-            まず「🎤 音声入力」で話してから「🗣️ しゃべる→表示」を押してください
+            まず「mic 音声入力」で話してから「visibility しゃべる→表示」を押してください
               </div>
             )}
           </div>
