@@ -292,7 +292,7 @@ const ScribbleTranslator = () => {
   useEffect(() => {
     const el = topRef.current;
     const w = el?.offsetWidth || 900;
-    const margin = 16; // 左端のマージンを調整（右寄りを修正）
+    const margin = 12; // 左端のマージンを調整（4px左に移動）
     const maxW = Math.max(200, w - margin * 2);
     const N = Math.max(1, displayText.length);
     // 文字サイズを自動調整（最小32〜最大52に拡大）
@@ -304,7 +304,7 @@ const ScribbleTranslator = () => {
     const lineHeight = charSize + 8; // 行間
     const pos = [];
     let currentX = margin;
-    let currentY = Math.max(30, Math.round(charSize)); // ベースライン
+    let currentY = Math.max(38, Math.round(charSize + 8)); // 上下中央に配置
       let charIndex = 0;
     
     displayText.split("").forEach((ch, i) => {
@@ -1201,8 +1201,8 @@ const ScribbleTranslator = () => {
               />
               🔤 文節認識OFF
             </label>
-        </div>
-      </div>
+                    </div>
+          </div>
 
         {/* 言語選択と情報表示 */}
         <div style={styles.toolbarInfo}>
@@ -1367,7 +1367,7 @@ const ScribbleTranslator = () => {
                   </div>
                 </div>
           )}
-          </div>
+            </div>
         )}
         
       <div style={styles.main}>
@@ -1385,7 +1385,7 @@ const ScribbleTranslator = () => {
                   return (
                   <svg
                     key={c.id}
-                      style={{
+                style={{
                       position: "absolute",
                       left: `${c.x}px`,
                       top: `${c.y}px`,
@@ -1427,8 +1427,8 @@ const ScribbleTranslator = () => {
               ...styles.overlay,
               zIndex: 20, // 文字より上、線が途切れないように
               pointerEvents: "auto", // 常にイベントを受け取る
-              backgroundColor: "rgba(128, 128, 128, 0.1)", // 薄グレーでぐしゃぐしゃ範囲を表示
-              border: "1px dashed rgba(128, 128, 128, 0.3)", // 点線で範囲を明確化
+              backgroundColor: "rgba(128, 128, 128, 0.05)", // もっと薄いグレーでぐしゃぐしゃ範囲を表示
+              borderRadius: "8px", // 角Rを追加
             }}
               onPointerDown={startDrawPointer}
               onPointerMove={moveDrawPointer}
@@ -1443,7 +1443,7 @@ const ScribbleTranslator = () => {
                   inset: 0,
                   pointerEvents: "none",
                   zIndex: 25,
-                  backgroundColor: "rgba(128, 128, 128, 0.05)", // さらに薄いグレーで描画範囲を表示
+                  backgroundColor: "rgba(128, 128, 128, 0.02)", // もっと薄いグレーで描画範囲を表示
                 }}
                 width={overlayRef.current?.offsetWidth || 800}
                 height={overlayRef.current?.offsetHeight || 600}
@@ -1474,10 +1474,10 @@ const ScribbleTranslator = () => {
           )}
 
 
-        </div>
+                      </div>
 
                         {/* 2) 折り返し（日本語） */}
-          <div style={{
+                      <div style={{
               marginBottom: 14, 
               opacity: 0.95,
               fontWeight: 800,
@@ -1510,7 +1510,7 @@ const ScribbleTranslator = () => {
                   )}
                 </text>
               </svg>
-            </div>
+                      </div>
             
                         {/* 3) 翻訳（選択言語） */}
                   <div style={{
@@ -1544,8 +1544,8 @@ const ScribbleTranslator = () => {
                   )}
                 </text>
               </svg>
-                      </div>
-                      </div>
+                    </div>
+                </div>
         ) : (
           <div style={styles.empty}>
             まず「🎤 音声入力」で話してから「🗣️ 表示」を押してください
