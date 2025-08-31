@@ -1179,68 +1179,82 @@ const ScribbleTranslator = () => {
                     fontSize: '14px',
                     borderBottom: '1px solid #f3f4f6',
                   }}
-                >
-                  🎤 音声入力
-          </button>
-          <button 
-                  onClick={() => {
-                    setSelectedInputMethod('keyboard');
-                    setShowInputDropdown(false);
-                    // キーボード入力を直接開始
-                    setInlineEditMode('keyboard');
-                    setInlineEditText('');
-                    const centerX = window.innerWidth / 2 - 225;
-                    const centerY = window.innerHeight / 2 - 100;
-                    setInlineEditPosition({ x: centerX, y: centerY });
-                    setIsComposing(false);
-                    setEnterPressCount(0);
-                  }}
-            style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: 'none',
-                    background: selectedInputMethod === 'keyboard' ? '#f3f4f6' : 'transparent',
-                    color: '#374151',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    borderBottom: '1px solid #f3f4f6',
-                  }}
-                >
-                  ⌨️ キーボード
-          </button>
-            <button 
-                  onClick={() => {
-                    setSelectedInputMethod('handwriting');
-                    setShowInputDropdown(false);
-                    // 手書き入力を直接開始
-                    setInlineEditMode('ink');
-                    setInlineEditText('');
-                    const centerX = window.innerWidth / 2 - 150;
-                    const centerY = window.innerHeight / 2 - 100;
-                    setInlineEditPosition({ x: centerX, y: centerY });
-                    setIsComposing(false);
-                    setEnterPressCount(0);
-                  }}
-              style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: 'none',
-                    background: selectedInputMethod === 'handwriting' ? '#f3f4f6' : 'transparent',
-                    color: '#374151',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                  }}
-                >
-                  ✍️ 手書き
-            </button>
+                                  >
+                    🎤 音声入力
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedInputMethod('keyboard');
+                      setShowInputDropdown(false);
+                      // キーボード入力を直接開始
+                      setInlineEditMode('keyboard');
+                      setInlineEditText('');
+                      const centerX = window.innerWidth / 2 - 225;
+                      const centerY = window.innerHeight / 2 - 100;
+                      setInlineEditPosition({ x: centerX, y: centerY });
+                      setIsComposing(false);
+                      setEnterPressCount(0);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: 'none',
+                      background: selectedInputMethod === 'keyboard' ? '#f3f4f6' : 'transparent',
+                      color: '#374151',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      borderBottom: '1px solid #f3f4f6',
+                    }}
+                  >
+                    ⌨️ キーボード入力
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedInputMethod('handwriting');
+                      setShowInputDropdown(false);
+                      // 手書き入力を直接開始
+                      setInlineEditMode('ink');
+                      setInlineEditText('');
+                      const centerX = window.innerWidth / 2 - 150;
+                      const centerY = window.innerHeight / 2 - 100;
+                      setInlineEditPosition({ x: centerX, y: centerY });
+                      setIsComposing(false);
+                      setEnterPressCount(0);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: 'none',
+                      background: selectedInputMethod === 'handwriting' ? '#f3f4f6' : 'transparent',
+                      color: '#374151',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                    }}
+                  >
+                    ✍️ 手書き入力
+                  </button>
               </div>
             )}
           </div>
           
-          {/* 履歴表示ボタン */}
-                      <button 
+                      {/* 音声入力選択時のみ表示ボタンを表示 */}
+            {selectedInputMethod === 'voice' && (
+              <button 
+                onClick={() => {
+                  setVisibleText(currentText);
+                  setSelectedGroups(new Set());
+                  setMode("shown");
+                }}
+                style={styles.btnPurple}
+              >
+                🗣️ 表示
+              </button>
+            )}
+            
+            {/* 履歴表示ボタン */}
+            <button 
               onClick={() => {
                 console.log('履歴ボタンクリック:', { showHistory, inputHistory });
                 setShowHistory(!showHistory);
@@ -1251,21 +1265,7 @@ const ScribbleTranslator = () => {
               }}
             >
               📋 履歴 ({inputHistory.length})
-          </button>
-          
-                    {/* 音声入力選択時のみ表示ボタンを表示 */}
-          {selectedInputMethod === 'voice' && (
-            <button 
-              onClick={() => {
-                setVisibleText(currentText);
-                setSelectedGroups(new Set());
-                setMode("shown");
-              }}
-              style={styles.btnPurple}
-            >
-              🗣️ 表示
             </button>
-          )}
           <button
             onClick={() => {
               console.log('リセットボタンクリック');
