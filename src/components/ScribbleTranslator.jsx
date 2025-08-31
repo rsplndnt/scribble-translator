@@ -1104,7 +1104,7 @@ const ScribbleTranslator = () => {
               backgroundColor: showHistory ? "rgba(9, 111, 202, 0.1)" : "transparent"
             }}
           >
-            📋 履歴選択 ({voiceHistory.length})
+            📋 履歴ボタン ({voiceHistory.length})
           </button>
           
           <button 
@@ -1612,7 +1612,7 @@ const ScribbleTranslator = () => {
               alignItems: "center",
               marginBottom: "20px",
             }}>
-              <h3 style={{ margin: 0, color: "#374151" }}>🎤 音声認識履歴（クリックで選択・表示）</h3>
+              <h3 style={{ margin: 0, color: "#374151" }}>🎤 音声認識履歴（ボタンで操作）</h3>
               <button 
                 onClick={() => setShowHistory(false)}
                 style={{
@@ -1640,7 +1640,7 @@ const ScribbleTranslator = () => {
                   backgroundColor: "#F3F4F6",
                   borderRadius: "6px"
                 }}>
-                  💡 履歴をクリックすると即座に原文として表示されます
+                  💡 各履歴項目のボタンで操作を選択してください
                 </p>
               <ul style={{ 
                 listStyle: "none", 
@@ -1654,36 +1654,18 @@ const ScribbleTranslator = () => {
                   <li 
                     key={index}
                     style={{
-                      padding: "12px 16px",
+                      padding: "16px",
                       backgroundColor: "#F9FAFB",
-                      borderRadius: "6px",
+                      borderRadius: "8px",
                       border: "1px solid #E5E7EB",
-                      cursor: "pointer",
                       transition: "all 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "#F3F4F6";
-                      e.target.style.borderColor = "#D1D5DB";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "#F9FAFB";
-                      e.target.style.borderColor = "#E5E7EB";
-                    }}
-                    onClick={() => {
-                      console.log('履歴クリック:', { text, currentText: currentText });
-                      setCurrentText(text); // 原文を上書き更新
-                      setVisibleText(text); // 表示テキストも即座に更新
-                      setSelectedGroups(new Set()); // 選択状態をリセット
-                      setMode("shown"); // 表示モードに切り替え
-                      setShowHistory(false);
-                      console.log('履歴挿入完了:', { text });
                     }}
                   >
                     <div style={{ 
                       display: "flex", 
                       justifyContent: "space-between", 
-                      alignItems: "center",
-                      marginBottom: "6px"
+                      alignItems: "flex-start",
+                      marginBottom: "12px"
                     }}>
                       <span style={{ 
                         fontSize: "11px", 
@@ -1702,13 +1684,86 @@ const ScribbleTranslator = () => {
                         {new Date().toLocaleTimeString()}
                       </span>
                     </div>
+                    
                     <div style={{ 
                       color: "#374151",
                       fontSize: "15px",
                       lineHeight: "1.4",
-                      wordBreak: "break-word"
+                      wordBreak: "break-word",
+                      marginBottom: "12px"
                     }}>
                       {text}
+                    </div>
+                    
+                    <div style={{
+                      display: "flex",
+                      gap: "8px",
+                      justifyContent: "flex-end"
+                    }}>
+                      {/* 挿入ボタン */}
+                      <button
+                        onClick={() => {
+                          console.log('履歴挿入ボタンクリック:', { text, currentText: currentText });
+                          setCurrentText(prev => prev + text); // 既存テキストに追加
+                          setShowHistory(false);
+                          console.log('履歴挿入完了:', { text });
+                        }}
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          backgroundColor: "#096FCA",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = "#0759A3";
+                          e.target.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = "#096FCA";
+                          e.target.style.transform = "translateY(0)";
+                        }}
+                      >
+                        ➕ 挿入
+                      </button>
+                      
+                      {/* 置換ボタン */}
+                      <button
+                        onClick={() => {
+                          console.log('履歴置換ボタンクリック:', { text, currentText: currentText });
+                          setCurrentText(text); // 原文を上書き更新
+                          setVisibleText(text); // 表示テキストも即座に更新
+                          setSelectedGroups(new Set()); // 選択状態をリセット
+                          setMode("shown"); // 表示モードに切り替え
+                          setShowHistory(false);
+                          console.log('履歴置換完了:', { text });
+                        }}
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          backgroundColor: "#FF7669",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = "#E55A4D";
+                          e.target.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = "#FF7669";
+                          e.target.style.transform = "translateY(0)";
+                        }}
+                      >
+                        🔄 置換
+                      </button>
                     </div>
                   </li>
                 ))}
