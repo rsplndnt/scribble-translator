@@ -93,6 +93,8 @@ const ScribbleTranslator = () => {
     { type: "handwriting", text: "テスト履歴3", timestamp: new Date() }
   ]); // 全入力方式の履歴（最大10個）
   const [showHistory, setShowHistory] = useState(false); // 履歴表示フラグ
+  const [selectedInputMethod, setSelectedInputMethod] = useState('voice'); // 選択された入力方式
+  const [showInputDropdown, setShowInputDropdown] = useState(false); // 入力方式ドロップダウンの表示状態
 
   // タイル描画
   const topRef = useRef(null);
@@ -1094,56 +1096,134 @@ const ScribbleTranslator = () => {
       <div style={styles.toolbar}>
         {/* メイン操作ボタン群 */}
         <div style={styles.toolbarMain}>
-          <button 
-            onClick={toggleMic} 
-            style={{
-              ...styles.btnBlue,
-              animation: isListening ? 'float 3s ease-in-out infinite, glow 2s ease-in-out infinite' : 'none',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {isListening ? "⏹ 停止" : "🎤 音声入力"}
+          {/* 入力方式選択ドロップダウン */}
+          <div style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setShowInputDropdown(!showInputDropdown)}
+              style={{
+                ...styles.btnBlue,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                minWidth: '160px',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>
+                {selectedInputMethod === 'voice' && '🎤 音声入力'}
+                {selectedInputMethod === 'keyboard' && '⌨️ キーボード'}
+                {selectedInputMethod === 'handwriting' && '✍️ 手書き'}
+              </span>
+              <span style={{ fontSize: '12px' }}>▼</span>
+            </button>
             
-            {/* ほわほわする波紋エフェクト */}
-            {isListening && (
-              <>
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  width: '4px',
-                  height: '4px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.6)',
-                  borderRadius: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  animation: 'ripple 2s ease-out infinite',
-                }} />
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  width: '3px',
-                  height: '3px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                  borderRadius: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  animation: 'ripple 2s ease-out infinite 0.5s',
-                }} />
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  width: '2px',
-                  height: '2px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                  borderRadius: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  animation: 'ripple 2s ease-out infinite 1s',
-                }} />
-              </>
+            {/* 入力開始ボタン */}
+            <button
+              onClick={() => {
+                if (selectedInputMethod === 'voice') {
+                  toggleMic();
+                } else if (selectedInputMethod === 'keyboard') {
+                  setInlineEditMode('keyboard');
+                  setInlineEditText('');
+                  const centerX = window.innerWidth / 2 - 225;
+                  const centerY = window.innerHeight / 2 - 100;
+                  setInlineEditPosition({ x: centerX, y: centerY });
+                  setIsComposing(false);
+                  setEnterPressCount(0);
+                } else if (selectedInputMethod === 'handwriting') {
+                  setInlineEditMode('ink');
+                  setInlineEditText('');
+                  const centerX = window.innerWidth / 2 - 150;
+                  const centerY = window.innerHeight / 2 - 100;
+                  setInlineEditPosition({ x: centerX, y: centerY });
+                  setIsComposing(false);
+                  setEnterPressCount(0);
+                }
+              }}
+              style={{
+                ...styles.btnBlue,
+                marginLeft: '8px',
+                backgroundColor: isListening ? '#dc2626' : '#096FCA',
+              }}
+            >
+              {selectedInputMethod === 'voice' && (isListening ? '⏹ 停止' : '🎤 開始')}
+              {selectedInputMethod === 'keyboard' && '⌨️ 入力開始'}
+              {selectedInputMethod === 'handwriting' && '✍️ 入力開始'}
+            </button>
+            
+            {/* ドロップダウンメニュー */}
+            {showInputDropdown && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                backgroundColor: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                zIndex: 1000,
+                marginTop: '4px',
+              }}>
+                <button
+                  onClick={() => {
+                    setSelectedInputMethod('voice');
+                    setShowInputDropdown(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: 'none',
+                    background: selectedInputMethod === 'voice' ? '#f3f4f6' : 'transparent',
+                    color: '#374151',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    borderBottom: '1px solid #f3f4f6',
+                  }}
+                >
+                  🎤 音声入力
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedInputMethod('keyboard');
+                    setShowInputDropdown(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: 'none',
+                    background: selectedInputMethod === 'keyboard' ? '#f3f4f6' : 'transparent',
+                    color: '#374151',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    borderBottom: '1px solid #f3f4f6',
+                  }}
+                >
+                  ⌨️ キーボード
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedInputMethod('handwriting');
+                    setShowInputDropdown(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: 'none',
+                    background: selectedInputMethod === 'handwriting' ? '#f3f4f6' : 'transparent',
+                    color: '#374151',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                  }}
+                >
+                  ✍️ 手書き
+                </button>
+              </div>
             )}
-          </button>
+          </div>
           
           {/* 履歴表示ボタン */}
                       <button 
@@ -1159,16 +1239,19 @@ const ScribbleTranslator = () => {
               📋 履歴 ({inputHistory.length})
             </button>
           
-          <button 
-            onClick={() => {
-              setVisibleText(currentText);
-              setSelectedGroups(new Set());
-              setMode("shown");
-            }}
-            style={styles.btnPurple}
-          >
-            🗣️ 表示
-          </button>
+                    {/* 音声入力選択時のみ表示ボタンを表示 */}
+          {selectedInputMethod === 'voice' && (
+            <button 
+              onClick={() => {
+                setVisibleText(currentText);
+                setSelectedGroups(new Set());
+                setMode("shown");
+              }}
+              style={styles.btnPurple}
+            >
+              🗣️ 表示
+            </button>
+          )}
           <button
             onClick={() => {
               console.log('リセットボタンクリック');
@@ -1201,110 +1284,7 @@ const ScribbleTranslator = () => {
           </button>
       </div>
 
-        {/* 入力方法選択ボタン群 */}
-        <div style={styles.toolbarInput}>
-          <button 
-            onClick={() => {
-              console.log('キーボード入力ボタンがクリックされました');
-              setInlineEditMode('keyboard');
-              setInlineEditText('');
-              // 画面中央付近に配置（テキストボックスサイズを考慮）
-              const centerX = window.innerWidth / 2 - 225; // 450px / 2
-              const centerY = window.innerHeight / 2 - 100;
-              console.log('編集ウィンドウ位置:', { x: centerX, y: centerY });
-              setInlineEditPosition({ x: centerX, y: centerY });
-              
-              // 日本語入力状態をリセット
-              setIsComposing(false);
-              setEnterPressCount(0);
-            }} 
-            style={styles.btnGhost}
-          >
-            ⌨️ キーボード
-          </button>
-          <button 
-            onClick={() => {
-              console.log('手書き入力ボタンがクリックされました');
-              setInlineEditMode('ink');
-              setInlineEditText('');
-              // 画面中央付近に配置（手書きキャンバスサイズを考慮）
-              const centerX = window.innerWidth / 2 - 150; // 300px / 2
-              const centerY = window.innerHeight / 2 - 100;
-              console.log('編集ウィンドウ位置:', { x: centerX, y: centerY });
-              setInlineEditPosition({ x: centerX, y: centerY });
-              
-              // 日本語入力状態をリセット
-              setIsComposing(false);
-              setEnterPressCount(0);
-            }} 
-            style={styles.btnGhost}
-          >
-            ✍️ 手書き
-          </button>
-          
-          {/* 文節認識のラジオボタン */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '4px',
-            backgroundColor: '#f3f4f6',
-            borderRadius: '8px',
-            border: '1px solid #d1d5db',
-          }}>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              backgroundColor: isBunsetsuMode ? '#10b981' : 'transparent',
-              color: isBunsetsuMode ? '#fff' : '#374151',
-              transition: 'all 0.2s ease',
-            }}>
-              <input
-                type="radio"
-                name="bunsetsuMode"
-                checked={isBunsetsuMode}
-                onChange={() => {
-                  setIsBunsetsuMode(true);
-                  setSelectedGroups(new Set());
-                }}
-                style={{ display: 'none' }}
-              />
-              🤖 文節認識ON
-            </label>
-            
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              backgroundColor: !isBunsetsuMode ? '#6b7280' : 'transparent',
-              color: !isBunsetsuMode ? '#fff' : '#374151',
-              transition: 'all 0.2s ease',
-            }}>
-              <input
-                type="radio"
-                name="bunsetsuMode"
-                checked={!isBunsetsuMode}
-                onChange={() => {
-                  setIsBunsetsuMode(false);
-                  setSelectedGroups(new Set());
-                }}
-                style={{ display: 'none' }}
-              />
-              🔤 文節認識OFF
-            </label>
-                    </div>
-          </div>
+
 
         {/* 言語選択と情報表示 */}
         <div style={styles.toolbarInfo}>
