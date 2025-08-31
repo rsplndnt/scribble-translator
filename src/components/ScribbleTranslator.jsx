@@ -377,8 +377,8 @@ const ScribbleTranslator = () => {
     console.log('触れた文字インデックス:', touchedIndex.size, '個');
 
     if (touchedIndex.size > 0) {
-      if (bunsetsuGroups.length > 0) {
-        // 文節がある場合：文節単位で選択
+      if (isBunsetsuMode && bunsetsuGroups.length > 0) {
+        // 文節モード：文節単位で選択
         const touchedGroups = new Set();
         bunsetsuGroups.forEach((g, gi) => {
           if (g.indices.some((i) => touchedIndex.has(i))) touchedGroups.add(gi);
@@ -393,13 +393,12 @@ const ScribbleTranslator = () => {
           });
         }
     } else {
-        // 文節がない場合：文字単位で選択（原文表示状態）
+        // 文字モード：文字単位で選択
         setSelectedGroups((prev) => {
           const s = new Set(prev);
-          // 触れた文字のインデックスを文節として扱う
+          // 触れた文字のインデックスをトグル
           touchedIndex.forEach((charIndex) => {
-            const groupIndex = charIndex; // 文字インデックスをそのまま文節インデックスとして使用
-            s.has(groupIndex) ? s.delete(groupIndex) : s.add(groupIndex);
+            s.has(charIndex) ? s.delete(charIndex) : s.add(charIndex);
           });
           return s;
         });
@@ -495,16 +494,28 @@ const ScribbleTranslator = () => {
     return interpolated;
   };
 
-  /* ------ タップで文節トグル ------ */
+  /* ------ タップで文節/文字トグル ------ */
   const toggleGroupByIndex = (charIndex) => {
     setMode("selecting");
-    const gIdx = bunsetsuGroups.length > 0 ? charToGroup.get(charIndex) : charIndex;
-    if (gIdx === undefined) return;
-    setSelectedGroups((prev) => {
-      const s = new Set(prev);
-      s.has(gIdx) ? s.delete(gIdx) : s.add(gIdx);
-      return s;
-    });
+    
+    // 文節モードの場合は文節単位、そうでない場合は文字単位で選択
+    if (isBunsetsuMode && bunsetsuGroups.length > 0) {
+      // 文節モード：文節全体を選択/解除
+      const gIdx = charToGroup.get(charIndex);
+      if (gIdx === undefined) return;
+      setSelectedGroups((prev) => {
+        const s = new Set(prev);
+        s.has(gIdx) ? s.delete(gIdx) : s.add(gIdx);
+        return s;
+      });
+    } else {
+      // 文字モード：1文字ずつ選択/解除
+      setSelectedGroups((prev) => {
+        const s = new Set(prev);
+        s.has(charIndex) ? s.delete(charIndex) : s.add(charIndex);
+        return s;
+      });
+    }
   };
 
   /* ------ 手書きキャンバス初期化 ------ */
@@ -1172,7 +1183,10 @@ const ScribbleTranslator = () => {
             {/* 1) 原文：改行対応タイル（太字+縁取り / なぞり＆タップ可） */}
             <div ref={topRef} style={{ position: "relative", minHeight: 76, marginBottom: 10 }}>
               {tilePositions.map((c) => {
-                const gIdx = bunsetsuGroups.length > 0 ? charToGroup.get(c.index) : c.index;
+                // 文節モードの場合は文節単位、そうでない場合は文字単位で選択状態を判定
+                const gIdx = isBunsetsuMode && bunsetsuGroups.length > 0 
+                  ? charToGroup.get(c.index) 
+                  : c.index;
                 const selected = gIdx !== undefined && selectedGroups.has(gIdx);
                 return (
                   <svg
