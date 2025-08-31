@@ -1090,7 +1090,7 @@ const ScribbleTranslator = () => {
   return (
     <div className="custom-scrollbar" style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>👆しゃべり描き for the future</h1>
+        <h1 style={styles.title}>👆しゃべり描き NEXT</h1>
       </div>
 
       <div style={styles.toolbar}>
@@ -1128,9 +1128,9 @@ const ScribbleTranslator = () => {
                   backgroundColor: selectedInputMethod === 'voice' && isListening ? '#dc2626' : '#096FCA',
                 }}
               >
-                {selectedInputMethod === 'voice' && (isListening ? '⏹ 停止' : '🎤 開始')}
-                {selectedInputMethod === 'keyboard' && '⌨️ 入力開始'}
-                {selectedInputMethod === 'handwriting' && '✍️ 入力開始'}
+                {selectedInputMethod === 'voice' && (isListening ? '⏹ 停止' : '🎤 音声入力')}
+                {selectedInputMethod === 'keyboard' && '⌨️ キーボード入力'}
+                {selectedInputMethod === 'handwriting' && '✍️ 手書き入力'}
               </button>
               
               {/* ドロップダウン表示ボタン */}
@@ -1138,14 +1138,14 @@ const ScribbleTranslator = () => {
                 onClick={() => setShowInputDropdown(!showInputDropdown)}
                 style={{
                   ...styles.btnGhost,
-                  padding: '8px 12px',
+                  padding: '12px 16px',
                   minWidth: 'auto',
                   border: '1px solid #d1d5db',
                 }}
               >
                 ▼
               </button>
-            </div>
+        </div>
             
             
             
@@ -1182,7 +1182,7 @@ const ScribbleTranslator = () => {
                 >
                   🎤 音声入力
           </button>
-                            <button
+          <button 
                   onClick={() => {
                     setSelectedInputMethod('keyboard');
                     setShowInputDropdown(false);
@@ -1195,7 +1195,7 @@ const ScribbleTranslator = () => {
                     setIsComposing(false);
                     setEnterPressCount(0);
                   }}
-                  style={{
+            style={{
                     width: '100%',
                     padding: '12px 16px',
                     border: 'none',
@@ -1208,8 +1208,8 @@ const ScribbleTranslator = () => {
                   }}
                 >
                   ⌨️ キーボード
-                </button>
-                <button
+          </button>
+            <button 
                   onClick={() => {
                     setSelectedInputMethod('handwriting');
                     setShowInputDropdown(false);
@@ -1222,7 +1222,7 @@ const ScribbleTranslator = () => {
                     setIsComposing(false);
                     setEnterPressCount(0);
                   }}
-                  style={{
+              style={{
                     width: '100%',
                     padding: '12px 16px',
                     border: 'none',
@@ -1234,7 +1234,7 @@ const ScribbleTranslator = () => {
                   }}
                 >
                   ✍️ 手書き
-                </button>
+            </button>
               </div>
             )}
           </div>
