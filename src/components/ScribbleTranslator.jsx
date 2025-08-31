@@ -304,7 +304,7 @@ const ScribbleTranslator = () => {
     const lineHeight = charSize + 8; // 行間
     const pos = [];
     let currentX = margin;
-    let currentY = Math.max(38, Math.round(charSize + 8)); // 上下中央に配置
+    let currentY = Math.max(38, Math.round(charSize - 8)); // 上下中央に配置
       let charIndex = 0;
     
     displayText.split("").forEach((ch, i) => {
@@ -325,7 +325,7 @@ const ScribbleTranslator = () => {
         charSize
       });
       
-      currentX += charSize + spacing;
+      currentX += charSize + spacing + 2; // 背景ボックスが重ならないように2px追加
       charIndex++;
     });
     setTilePositions(pos);
@@ -1397,9 +1397,9 @@ const ScribbleTranslator = () => {
                       borderRadius: "6px", // Goodpatch: 統一された角丸
                       padding: "4px 6px", // 統一されたパディング
                     }}
-                    width={c.charSize * 1.2}
-                    height={c.charSize * 1.2}
-                    viewBox={`0 0 ${c.charSize * 1.2} ${c.charSize * 1.2}`}
+                    width={c.charSize}
+                    height={c.charSize}
+                    viewBox={`0 0 ${c.charSize} ${c.charSize}`}
                   >
                     <text
                       x="50%"
