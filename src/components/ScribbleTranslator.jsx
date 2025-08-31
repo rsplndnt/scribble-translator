@@ -828,16 +828,10 @@ const ScribbleTranslator = () => {
       </div>
 
       <div style={styles.toolbar}>
-        <div style={styles.toolbarInfo}>
-          {isListening ? (
-            <span style={{ color: "#ef4444", fontWeight: 600 }}>🎤 音声入力中…</span>
-          ) : (
-            <span>📝 取得文字数: {currentText.length}</span>
-          )}
-        </div>
-        <div style={styles.toolbarButtons}>
+        {/* メイン操作ボタン群 */}
+        <div style={styles.toolbarMain}>
           <button onClick={toggleMic} style={styles.btnBlue}>
-            {isListening ? "⏹ 音声停止" : "🎤 音声入力"}
+            {isListening ? "⏹ 停止" : "🎤 音声入力"}
           </button>
           <button 
             onClick={() => {
@@ -847,19 +841,23 @@ const ScribbleTranslator = () => {
             }}
             style={styles.btnPurple}
           >
-            🗣️ しゃべる→表示
+            🗣️ 表示
           </button>
-          <select
-            value={targetLang}
-            onChange={(e) => setTargetLang(e.target.value)}
-            style={styles.select}
-            aria-label="翻訳先言語"
+          <button
+            onClick={() => {
+              setVisibleText("");
+              setSelectedGroups(new Set());
+              setMode("idle");
+            }}
+            style={styles.btnGhost}
           >
-            <option value="en">英語</option>
-            <option value="ko">韓国語</option>
-            <option value="zh">中国語</option>
-          </select>
-            <button 
+            🔄 リセット
+          </button>
+        </div>
+
+        {/* 入力方法選択ボタン群 */}
+        <div style={styles.toolbarInput}>
+          <button 
             onClick={() => {
               console.log('キーボード入力ボタンがクリックされました');
               setInlineEditMode('keyboard');
@@ -876,8 +874,8 @@ const ScribbleTranslator = () => {
             }} 
             style={styles.btnGhost}
           >
-            ⌨️ キーボード入力
-            </button>
+            ⌨️ キーボード
+          </button>
           <button 
             onClick={() => {
               console.log('手書き入力ボタンがクリックされました');
@@ -895,20 +893,27 @@ const ScribbleTranslator = () => {
             }} 
             style={styles.btnGhost}
           >
-            ✍️ 手書き入力
+            ✍️ 手書き
           </button>
-          <button
-            onClick={() => {
-              setCurrentText("");
-              setVisibleText("");
-              setSelectedGroups(new Set());
-              setTriplet({ src: "", back: "", trans: "" });
-              setMode("idle");
-            }}
-            style={styles.btnDanger}
+        </div>
+
+        {/* 言語選択と情報表示 */}
+        <div style={styles.toolbarInfo}>
+          <select
+            value={targetLang}
+            onChange={(e) => setTargetLang(e.target.value)}
+            style={styles.select}
+            aria-label="翻訳先言語"
           >
-            🔄 リセット
-          </button>
+            <option value="en">🇺🇸 英語</option>
+            <option value="ko">🇰🇷 韓国語</option>
+            <option value="zh">🇨🇳 中国語</option>
+          </select>
+          {isListening ? (
+            <span style={styles.listeningIndicator}>🎤 音声入力中…</span>
+          ) : (
+            <span style={styles.textCount}>📝 {currentText.length}文字</span>
+          )}
         </div>
       </div>
 
@@ -924,7 +929,13 @@ const ScribbleTranslator = () => {
           padding: "16px",
           boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
           zIndex: 1000,
-          minWidth: "450px"
+          minWidth: "450px",
+          "@media (max-width: 768px)": {
+            minWidth: "90vw",
+            left: "5vw",
+            right: "5vw",
+            padding: "12px",
+          },
         }}>
           {inlineEditMode === 'keyboard' ? (
             <div>
@@ -966,7 +977,12 @@ const ScribbleTranslator = () => {
                   fontSize: "16px",
                   lineHeight: "1.5",
                   resize: "both",
-                  fontFamily: "inherit"
+                  fontFamily: "inherit",
+                  "@media (max-width: 768px)": {
+                    width: "100%",
+                    height: "100px",
+                    fontSize: "16px",
+                  },
                 }}
                 placeholder="テキストを入力してください..."
                 autoFocus
@@ -1144,20 +1160,57 @@ const styles = {
     color: "#fff",
     padding: "20px 28px",
     boxShadow: "0 6px 22px rgba(9,111,202,.28)",
+    "@media (max-width: 768px)": {
+      padding: "16px 20px",
+    },
   },
-  title: { margin: 0, fontSize: 28, fontWeight: 800 },
-  subtitle: { margin: "6px 0 0", opacity: 0.95 },
+  title: { 
+    margin: 0, 
+    fontSize: 28, 
+    fontWeight: 800,
+    "@media (max-width: 768px)": {
+      fontSize: 24,
+    },
+  },
+  subtitle: { 
+    margin: "6px 0 0", 
+    opacity: 0.95,
+    "@media (max-width: 768px)": {
+      fontSize: "14px",
+    },
+  },
   toolbar: {
-    background: "#fff",
+    background: "#DDDDDD",
+    border: "1px solid #e5e7eb",
+    borderRadius: 12,
+    padding: "16px 20px",
+    marginBottom: 24,
     display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    padding: "14px 28px",
-    borderBottom: "1px solid #e5e7eb",
+    flexDirection: "column",
+    gap: 16,
   },
-  toolbarInfo: { fontSize: 14 },
-  toolbarButtons: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" },
+  toolbarMain: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  toolbarInput: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  toolbarInfo: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
+    flexWrap: "wrap",
+    fontSize: 14,
+  },
   btnBlue: {
     padding: "8px 14px",
     background: "#3b82f6",
@@ -1167,6 +1220,11 @@ const styles = {
     fontWeight: 700,
     boxShadow: "0 2px 10px rgba(59,130,246,.25)",
     cursor: "pointer",
+    "@media (max-width: 768px)": {
+      padding: "10px 16px",
+      fontSize: "14px",
+      minWidth: "80px",
+    },
   },
   btnPurple: {
     padding: "8px 14px",
@@ -1177,6 +1235,11 @@ const styles = {
     fontWeight: 700,
     boxShadow: "0 2px 10px rgba(139,92,246,.25)",
     cursor: "pointer",
+    "@media (max-width: 768px)": {
+      padding: "10px 16px",
+      fontSize: "14px",
+      minWidth: "80px",
+    },
   },
   btnGhost: {
     padding: "8px 14px",
@@ -1185,6 +1248,11 @@ const styles = {
     borderRadius: 8,
     fontWeight: 700,
     cursor: "pointer",
+    "@media (max-width: 768px)": {
+      padding: "10px 16px",
+      fontSize: "14px",
+      minWidth: "80px",
+    },
   },
   btnDanger: {
     padding: "8px 14px",
@@ -1196,14 +1264,41 @@ const styles = {
     cursor: "pointer",
     boxShadow: "0 2px 10px rgba(255,118,105,.25)",
   },
-  select: { padding: "8px 12px", border: "1px solid #e5e7eb", borderRadius: 8 },
-  main: { maxWidth: 1100, margin: "24px auto", padding: "0 28px" },
+  select: { 
+    padding: "8px 12px", 
+    border: "1px solid #e5e7eb", 
+    borderRadius: 8,
+    fontSize: "14px",
+    minWidth: "120px",
+  },
+  listeningIndicator: {
+    color: "#ef4444",
+    fontWeight: 600,
+    fontSize: "14px",
+  },
+  textCount: {
+    color: "#6b7280",
+    fontSize: "14px",
+  },
+  main: { 
+    maxWidth: 1100, 
+    margin: "24px auto", 
+    padding: "0 16px",
+    "@media (max-width: 768px)": {
+      padding: "0 12px",
+      margin: "16px auto",
+    },
+  },
   card: {
     background: "#DDDDDD",
     border: "1px solid #e5e7eb",
     borderRadius: 14,
     boxShadow: "0 10px 26px rgba(0,0,0,.06)",
     padding: 24,
+    "@media (max-width: 768px)": {
+      padding: 16,
+      borderRadius: 12,
+    },
   },
   empty: {
     color: "#6b7280",
