@@ -1323,8 +1323,8 @@ const ScribbleTranslator = () => {
                       transform: "translate(-50%,-50%)",
                       cursor: selectedGroups.size > 0 ? "pointer" : "crosshair", // 選択状態でのみクリック可能
                       zIndex: 10, // オーバーレイより下だが見える位置
-                      backgroundColor: "transparent", // Goodpatch: クリーンな背景
-                      border: selected ? "2px solid #096FCA" : "2px solid transparent", // Goodpatch: ボーダー選択
+                      backgroundColor: selected ? "rgba(9, 111, 202, 0.2)" : "transparent", // 透明度のある塗りで選択状態
+                      border: "none", // ボーダーを削除
                       borderRadius: "6px", // Goodpatch: 統一された角丸
                       padding: "4px 6px", // 統一されたパディング
                     }}
