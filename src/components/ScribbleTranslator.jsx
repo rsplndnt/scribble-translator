@@ -1358,7 +1358,7 @@ const ScribbleTranslator = () => {
                       top: `${c.y}px`,
                       transform: "translate(-50%,-50%)",
                       cursor: selectedGroups.size > 0 ? "pointer" : "crosshair", // 選択状態でのみクリック可能
-                      zIndex: 10, // オーバーレイより下だが見える位置
+                      zIndex: 5, // オーバーレイより下に配置（線が途切れないように）
                       backgroundColor: selected ? "rgba(9, 111, 202, 0.2)" : "transparent", // 透明度のある塗りで選択状態
                       border: "none", // ボーダーを削除
                       borderRadius: "6px", // Goodpatch: 統一された角丸
@@ -1392,7 +1392,7 @@ const ScribbleTranslator = () => {
             ref={overlayRef}
             style={{
               ...styles.overlay,
-              zIndex: 15, // 文字より上に配置
+              zIndex: 20, // 文字より上、線が途切れないように
               pointerEvents: "auto", // 常にイベントを受け取る
             }}
               onPointerDown={startDrawPointer}
@@ -1401,7 +1401,7 @@ const ScribbleTranslator = () => {
               onPointerLeave={stopDrawPointer}
             >
                             {isDrawing && drawPath.length > 1 && (
-                  <svg style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+                  <svg style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 25 }}>
                 <path
                       d={`M ${drawPath.map((p) => `${p.x},${p.y}`).join(" L ")}`}
                       stroke={hasSignificantDirectionChanges(drawPath) ? "#096FCA" : "#FF6B6B"}
