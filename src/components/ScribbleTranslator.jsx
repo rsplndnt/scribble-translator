@@ -289,6 +289,29 @@ const ScribbleTranslator = () => {
     const hasChanges = hasSignificantDirectionChanges(drawPath);
     console.log('線の折り返し検出:', hasChanges, 'パス長:', drawPath.length);
     console.log('描画パス:', drawPath);
+    console.log('パスの詳細分析:');
+    console.log('- 始点:', drawPath[0]);
+    console.log('- 終点:', drawPath[drawPath.length - 1]);
+    if (drawPath.length > 2) {
+      const startPoint = drawPath[0];
+      const endPoint = drawPath[drawPath.length - 1];
+      const totalDistance = Math.hypot(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+      console.log('- 始点-終点距離:', totalDistance.toFixed(2));
+      
+      // 平均偏差を計算して表示
+      let totalDeviation = 0;
+      for (let i = 1; i < drawPath.length - 1; i++) {
+        const point = drawPath[i];
+        const t = ((point.x - startPoint.x) * (endPoint.x - startPoint.x) + 
+                   (point.y - startPoint.y) * (endPoint.y - startPoint.y)) / (totalDistance * totalDistance);
+        const projectionX = startPoint.x + t * (endPoint.x - startPoint.x);
+        const projectionY = startPoint.y + t * (endPoint.y - startPoint.y);
+        const deviation = Math.hypot(point.x - projectionX, point.y - projectionY);
+        totalDeviation += deviation;
+      }
+      const avgDeviation = totalDeviation / (drawPath.length - 2);
+      console.log('- 平均偏差:', avgDeviation.toFixed(2));
+    }
     
     // デバッグ用：一時的に折り返し検出を無効化
     const debugMode = false; // デバッグモード（falseで折り返し検出を有効化）
@@ -338,7 +361,7 @@ const ScribbleTranslator = () => {
             return s;
           });
         }
-      } else {
+    } else {
         // 文節がない場合：文字単位で選択（原文表示状態）
         setSelectedGroups((prev) => {
           const s = new Set(prev);
@@ -356,11 +379,11 @@ const ScribbleTranslator = () => {
 
   /* ------ 線の折り返し検出 ------ */
   const hasSignificantDirectionChanges = (path) => {
-    if (path.length < 4) return false; // 最低4点必要（厳格化）
+    if (path.length < 3) return false; // 最低3点必要（緩和）
     
     let directionChanges = 0;
-    const minAngle = 25; // 25度以上の角度変化を折り返しとみなす（厳格化）
-    const minDistance = 12; // 最小距離を大きく（厳格化）
+    const minAngle = 20; // 20度以上の角度変化を折り返しとみなす（緩和）
+    const minDistance = 8; // 最小距離を小さく（緩和）
     
     // 直線性チェック：始点と終点を結ぶ直線からの平均距離
     const startPoint = path[0];
@@ -381,8 +404,8 @@ const ScribbleTranslator = () => {
       }
       const avgDeviation = totalDeviation / (path.length - 2);
       
-      // 平均偏差が小さすぎる場合は直線とみなす
-      if (avgDeviation < 8) {
+      // 平均偏差が小さすぎる場合は直線とみなす（閾値を下げて緩和）
+      if (avgDeviation < 5) {
         console.log('直線性が高すぎるため、選択をキャンセル');
         return false;
       }
@@ -422,8 +445,8 @@ const ScribbleTranslator = () => {
       }
     }
     
-    // 折り返しが2回以上ある場合を有効とする（厳格化）
-    return directionChanges >= 2;
+    // 折り返しが1回以上ある場合を有効とする（緩和）
+    return directionChanges >= 1;
   };
 
   /* ------ パス補間（ぐしゃぐしゃ線を滑らかに） ------ */
@@ -610,7 +633,7 @@ const ScribbleTranslator = () => {
       selectedIdx = new Set(
         [...selectedGroups].flatMap((gi) => bunsetsuGroups[gi]?.indices ?? [])
       );
-    } else {
+      } else {
       // 文節がない場合：選択されたインデックスをそのまま使用
       selectedIdx = selectedGroups;
     }
@@ -717,7 +740,7 @@ const ScribbleTranslator = () => {
               const recognizedText = result.responses[0].fullTextAnnotation.text;
               console.log('認識されたテキスト:', recognizedText);
               resolve(recognizedText.trim());
-            } else {
+        } else {
               console.log('テキスト認識されませんでした');
               resolve('');
             }
@@ -810,7 +833,7 @@ const ScribbleTranslator = () => {
             <option value="ko">韓国語</option>
             <option value="zh">中国語</option>
           </select>
-          <button 
+            <button 
             onClick={() => {
               console.log('キーボード入力ボタンがクリックされました');
               setInlineEditMode('keyboard');
@@ -828,7 +851,7 @@ const ScribbleTranslator = () => {
             style={styles.btnGhost}
           >
             ⌨️ キーボード入力
-          </button>
+            </button>
           <button 
             onClick={() => {
               console.log('手書き入力ボタンがクリックされました');
@@ -954,9 +977,9 @@ const ScribbleTranslator = () => {
               </div>
             </div>
           )}
-        </div>
-      )}
-
+          </div>
+        )}
+        
       <div style={styles.main}>
         {/* ===== 三段：原文 → 折り返し → 翻訳 ===== */}
         {visibleText ? (
@@ -993,9 +1016,9 @@ const ScribbleTranslator = () => {
               })}
 
               {/* なぞりオーバーレイ */}
-                      <div
-              ref={overlayRef}
-              style={styles.overlay}
+          <div
+            ref={overlayRef}
+            style={styles.overlay}
               onPointerDown={startDrawPointer}
               onPointerMove={moveDrawPointer}
               onPointerUp={stopDrawPointer}
@@ -1003,7 +1026,7 @@ const ScribbleTranslator = () => {
             >
                             {isDrawing && drawPath.length > 1 && (
                   <svg style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-                    <path
+                <path
                       d={`M ${drawPath.map((p) => `${p.x},${p.y}`).join(" L ")}`}
                       stroke={hasSignificantDirectionChanges(drawPath) ? "#096FCA" : "#FF6B6B"}
                       strokeWidth={4}
@@ -1023,8 +1046,8 @@ const ScribbleTranslator = () => {
                         </feMerge>
                       </filter>
                     </defs>
-                  </svg>
-                )}
+              </svg>
+            )}
           </div>
 
                             {/* 選択時のフローティング操作 */}
@@ -1040,10 +1063,10 @@ const ScribbleTranslator = () => {
           )}
 
 
-                      </div>
+            </div>
 
                         {/* 2) 折り返し（日本語） */}
-                      <div style={{
+                  <div style={{
               fontSize: 20, 
               marginBottom: 14, 
               opacity: 0.95,
@@ -1053,17 +1076,17 @@ const ScribbleTranslator = () => {
               letterSpacing: "0.5px"
             }}>
               {triplet.back}
-                      </div>
-
+            </div>
+            
                         {/* 3) 翻訳（選択言語） */}
-                  <div style={{
+                      <div style={{
               fontSize: 42,
               fontWeight: 800,
               WebkitTextStroke: "1.5px #FFFFFF",
               color: "#ff0000",
               letterSpacing: "0.5px"
             }}>{triplet.trans}</div>
-                    </div>
+                      </div>
         ) : (
           <div style={styles.empty}>
             まず「🎤 音声入力」で話してから「🗣️ しゃべる→表示」を押してください
