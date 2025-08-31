@@ -1954,28 +1954,31 @@ const styles = {
     wordBreak: "keep-all", // 日本語の単語を分割しない
     whiteSpace: "nowrap", // 改行を防ぐ
     "@media (max-width: 768px)": {
-      fontSize: "20px",
+      fontSize: "18px",
     },
     "@media (max-width: 430px)": {
-      fontSize: "18px", // iPhone 15 (430px) 対応
+      fontSize: "16px", // iPhone 15 (430px) 対応
     },
     "@media (max-width: 414px)": {
-      fontSize: "17px", // iPhone Plus シリーズ (414px) 対応
+      fontSize: "15px", // iPhone Plus シリーズ (414px) 対応
     },
     "@media (max-width: 390px)": {
-      fontSize: "16px", // iPhone 14/13 (390px) 対応
+      fontSize: "14px", // iPhone 14/13 (390px) 対応
     },
     "@media (max-width: 375px)": {
-      fontSize: "15px", // iPhone SE (375px) 対応
+      fontSize: "13px", // iPhone SE (375px) 対応
     },
     "@media (max-width: 360px)": {
-      fontSize: "14px", // 小さいAndroid (360px) 対応
+      fontSize: "12px", // 小さいAndroid (360px) 対応
     },
     "@media (max-width: 320px)": {
-      fontSize: "12px", // 最小サイズ (320px) 対応
+      fontSize: "11px", // 最小サイズ (320px) 対応
     },
     "@media (max-width: 280px)": {
-      fontSize: "11px", // 極小サイズ (280px) 対応
+      fontSize: "10px", // 極小サイズ (280px) 対応
+    },
+    "@media (max-width: 250px)": {
+      fontSize: "9px", // 超極小サイズ (250px) 対応
     },
   },
   subtitle: { 
