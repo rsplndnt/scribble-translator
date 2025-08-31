@@ -284,8 +284,12 @@ const ScribbleTranslator = () => {
     // 線の折り返しをチェック - 直線的すぎる場合は選択しない
     const hasChanges = hasSignificantDirectionChanges(drawPath);
     console.log('線の折り返し検出:', hasChanges, 'パス長:', drawPath.length);
+    console.log('描画パス:', drawPath);
     
-    if (!hasChanges) {
+    // デバッグ用：一時的に折り返し検出を無効化
+    const debugMode = true; // デバッグモード（trueで折り返し検出を無効化）
+    
+    if (!debugMode && !hasChanges) {
       console.log('直線的すぎる線のため、選択をキャンセル');
       setDrawPath([]);
       return;
@@ -297,6 +301,7 @@ const ScribbleTranslator = () => {
 
     // 描画パスを細かく分割して、より自然な選択を実現
     const interpolatedPath = interpolatePath(drawPath);
+    console.log('補間後のパス:', interpolatedPath.length, '点');
     
     for (const p of interpolatedPath) {
       for (const pos of tilePositions) {
@@ -310,6 +315,8 @@ const ScribbleTranslator = () => {
         }
       }
     }
+    
+    console.log('触れた文字インデックス:', touchedIndex.size, '個');
 
     if (touchedIndex.size > 0) {
       if (bunsetsuGroups.length > 0) {
@@ -345,17 +352,16 @@ const ScribbleTranslator = () => {
 
   /* ------ 線の折り返し検出 ------ */
   const hasSignificantDirectionChanges = (path) => {
-    if (path.length < 4) return false; // 最低4点必要
+    if (path.length < 3) return false; // 最低3点必要（緩和）
     
     let directionChanges = 0;
-    const minAngle = 30; // 30度以上の角度変化を折り返しとみなす
-    const minDistance = 15; // 最小距離（ノイズ除去）
+    const minAngle = 20; // 20度以上の角度変化を折り返しとみなす（緩和）
+    const minDistance = 8; // 最小距離を小さく（緩和）
     
-    for (let i = 2; i < path.length - 1; i++) {
-      const prev = path[i - 2];
-      const current = path[i - 1];
-      const next = path[i];
-      const nextNext = path[i + 1];
+    for (let i = 1; i < path.length - 1; i++) {
+      const prev = path[i - 1];
+      const current = path[i];
+      const next = path[i + 1];
       
       // 前のベクトル
       const v1 = {
@@ -386,8 +392,8 @@ const ScribbleTranslator = () => {
       }
     }
     
-    // 折り返しが2回以上ある場合を有効とする
-    return directionChanges >= 2;
+    // 折り返しが1回以上ある場合を有効とする（緩和）
+    return directionChanges >= 1;
   };
 
   /* ------ パス補間（ぐしゃぐしゃ線を滑らかに） ------ */
