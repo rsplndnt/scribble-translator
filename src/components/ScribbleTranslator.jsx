@@ -1078,18 +1078,18 @@ const ScribbleTranslator = () => {
         </div>
           </div>
 
-      {/* インライン編集ウィンドウ（常時表示） */}
+      {/* インライン編集ウィンドウ（Goodpatch風デザイン） */}
       {inlineEditMode && inlineEditPosition && (
             <div style={{
           position: "fixed", 
           left: window.innerWidth <= 768 ? "5vw" : inlineEditPosition.x, 
           top: window.innerWidth <= 768 ? "20vh" : inlineEditPosition.y - 60,
           right: window.innerWidth <= 768 ? "5vw" : "auto",
-          background: "#fff",
-          border: "2px solid #096FCA",
-          borderRadius: "8px",
-          padding: window.innerWidth <= 768 ? "16px" : "16px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          background: "#DDDDDD", // Goodpatch: 背景色統一
+          border: "1px solid #e5e7eb", // Goodpatch: 薄いボーダー
+          borderRadius: "12px", // Goodpatch: 角丸を大きく
+          padding: window.innerWidth <= 768 ? "24px" : "24px", // Goodpatch: 余白を大きく
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)", // Goodpatch: シンプルなシャドウ
           zIndex: 1000,
           minWidth: window.innerWidth <= 768 ? "90vw" : "450px",
           maxWidth: window.innerWidth <= 768 ? "90vw" : "600px",
@@ -1136,20 +1136,28 @@ const ScribbleTranslator = () => {
                   height: "auto",
                   minHeight: window.innerWidth <= 768 ? "120px" : "120px",
                   maxHeight: window.innerWidth <= 768 ? "200px" : "300px",
-                  padding: "12px",
-                  border: "1px solid #ddd",
-                  borderRadius: "6px",
+                  padding: "16px", // Goodpatch: パディングを大きく
+                  border: "1px solid #d1d5db", // Goodpatch: 薄いボーダー
+                  borderRadius: "8px", // Goodpatch: 角丸
                   fontSize: "16px",
-                  lineHeight: "1.5",
+                  lineHeight: "1.6", // Goodpatch: 行間を広く
                   resize: window.innerWidth <= 768 ? "none" : "both",
-                  fontFamily: "inherit",
+                  fontFamily: "'Noto Sans JP', system-ui, -apple-system, sans-serif", // Goodpatch: フォント指定
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
                   overflowWrap: "break-word",
                   overflow: "hidden",
                   boxSizing: "border-box",
+                  background: "#fff", // Goodpatch: 白背景
+                  color: "#374151", // Goodpatch: テキスト色
+                  transition: "all 0.2s ease", // Goodpatch: スムーズな変化
+                  "&:focus": {
+                    outline: "none",
+                    borderColor: "#096FCA", // Goodpatch: フォーカス時のプライマリーカラー
+                    boxShadow: "0 0 0 3px rgba(9, 111, 202, 0.1)", // Goodpatch: フォーカスリング
+                  }
                 }}
-                placeholder="テキストを入力してください..."
+                placeholder="修正したいテキストを入力してください" // Goodpatch: 明確なプレースホルダー
                 autoFocus
                 ref={(textarea) => {
                   if (textarea) {
@@ -1161,8 +1169,10 @@ const ScribbleTranslator = () => {
           <div style={{
                 display: "flex", 
                 flexDirection: window.innerWidth <= 768 ? "column" : "row",
-                gap: window.innerWidth <= 768 ? 6 : 8, 
-                marginTop: 12 
+                gap: window.innerWidth <= 768 ? 12 : 16, // Goodpatch: ギャップを大きく
+                marginTop: 20, // Goodpatch: マージンを大きく
+                alignItems: "center", // Goodpatch: 中央揃え
+                justifyContent: window.innerWidth <= 768 ? "stretch" : "flex-end", // Goodpatch: 右寄せ（PC）
               }}>
                                       <button onClick={finishInlineEdit} style={styles.btnPrimarySm}>✓ 保存</button>
                       <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
@@ -1177,11 +1187,12 @@ const ScribbleTranslator = () => {
                 style={{
                   width: window.innerWidth <= 768 ? "100%" : "300px",
                   height: window.innerWidth <= 768 ? "140px" : "150px",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  background: "#fff",
+                  border: "1px solid #d1d5db", // Goodpatch: 薄いボーダー
+                  borderRadius: "8px", // Goodpatch: 角丸
+                  background: "#fff", // Goodpatch: 白背景
                   cursor: "crosshair",
                   touchAction: "none",
+                  boxShadow: "inset 0 1px 3px rgba(0,0,0,0.05)", // Goodpatch: 内側の軽いシャドウ
                 }}
                 onMouseDown={startInkDrawing}
                 onMouseMove={drawInk}
@@ -1194,8 +1205,10 @@ const ScribbleTranslator = () => {
                   <div style={{
                 display: "flex", 
                 flexDirection: window.innerWidth <= 768 ? "column" : "row",
-                gap: window.innerWidth <= 768 ? 6 : 8, 
-                marginTop: 8 
+                gap: window.innerWidth <= 768 ? 12 : 16, // Goodpatch: ギャップを大きく
+                marginTop: 20, // Goodpatch: マージンを大きく
+                alignItems: "center", // Goodpatch: 中央揃え
+                justifyContent: window.innerWidth <= 768 ? "stretch" : "flex-end", // Goodpatch: 右寄せ（PC）
               }}>
                                       <button onClick={recognizeInk} style={styles.btnPrimarySm}>✍️ 認識</button>
                       <button onClick={clearInk} style={styles.btnGhostSm}>🧹 クリア</button>
