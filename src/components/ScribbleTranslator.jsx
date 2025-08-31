@@ -654,7 +654,7 @@ const ScribbleTranslator = () => {
       
       editPosition = { 
         x: centerX + offsetX, // 画面座標に変換
-        y: Math.max(80, topY + offsetY - 300) // 原文からさらに離して配置（300px上）
+        y: Math.max(80, topY + offsetY - 300) // 原文から適切な距離に配置（180px上）
       };
     }
     
@@ -1161,7 +1161,7 @@ const ScribbleTranslator = () => {
             <div style={{
           position: "fixed", 
           left: window.innerWidth <= 768 ? "5vw" : Math.max(10, Math.min(window.innerWidth - 460, inlineEditPosition.x - 225)), // 画面端を考慮
-          top: window.innerWidth <= 768 ? "15vh" : Math.max(80, inlineEditPosition.y - 50), // さらに上に移動
+          top: window.innerWidth <= 768 ? "25vh" : Math.max(80, inlineEditPosition.y), // 適切な高さに調整
           right: window.innerWidth <= 768 ? "5vw" : "auto",
           background: "rgba(255, 255, 255, 0.95)", // 白ベース + 透過で下の文字が見える
           border: "1px solid rgba(9, 111, 202, 0.3)", // プライマリーカラーの薄いボーダー
@@ -1430,7 +1430,7 @@ const ScribbleTranslator = () => {
                   y="20"
                   textAnchor="start"
                   dominantBaseline="middle"
-                  fontSize="clamp(18px, 4.5vw, 24px)"
+                  fontSize="clamp(14px, 4vw, 20px)"
                   fontWeight="800"
                   fill="#374151"
                   stroke="#FFFFFF"
@@ -1464,7 +1464,7 @@ const ScribbleTranslator = () => {
                   y="40"
                   textAnchor="start"
                   dominantBaseline="middle"
-                  fontSize="clamp(28px, 9vw, 48px)"
+                  fontSize="clamp(24px, 8.5vw, 44px)"
                   fontWeight="800"
                   fill="#374151"
                   stroke="#FFFFFF"
