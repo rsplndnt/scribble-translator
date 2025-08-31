@@ -1104,7 +1104,7 @@ const ScribbleTranslator = () => {
               backgroundColor: showHistory ? "rgba(9, 111, 202, 0.1)" : "transparent"
             }}
           >
-            📋 履歴挿入 ({voiceHistory.length})
+            📋 履歴選択 ({voiceHistory.length})
           </button>
           
           <button 
@@ -1612,7 +1612,7 @@ const ScribbleTranslator = () => {
               alignItems: "center",
               marginBottom: "20px",
             }}>
-              <h3 style={{ margin: 0, color: "#374151" }}>🎤 音声認識履歴（クリックで挿入）</h3>
+              <h3 style={{ margin: 0, color: "#374151" }}>🎤 音声認識履歴（クリックで選択・表示）</h3>
               <button 
                 onClick={() => setShowHistory(false)}
                 style={{
@@ -1630,6 +1630,18 @@ const ScribbleTranslator = () => {
             {voiceHistory.length === 0 ? (
               <p style={{ color: "#6B7280", textAlign: "center" }}>まだ音声認識の履歴がありません</p>
             ) : (
+              <>
+                <p style={{ 
+                  color: "#6B7280", 
+                  textAlign: "center", 
+                  fontSize: "14px",
+                  marginBottom: "16px",
+                  padding: "8px",
+                  backgroundColor: "#F3F4F6",
+                  borderRadius: "6px"
+                }}>
+                  💡 履歴をクリックすると即座に原文として表示されます
+                </p>
               <ul style={{ 
                 listStyle: "none", 
                 padding: 0, 
@@ -1659,12 +1671,12 @@ const ScribbleTranslator = () => {
                     }}
                     onClick={() => {
                       console.log('履歴クリック:', { text, currentText: currentText });
-                      setCurrentText(prev => {
-                        const newText = prev + text;
-                        console.log('新しいテキスト:', { prev, text, newText });
-                        return newText;
-                      }); // 既存テキストに追加
+                      setCurrentText(text); // 原文を上書き更新
+                      setVisibleText(text); // 表示テキストも即座に更新
+                      setSelectedGroups(new Set()); // 選択状態をリセット
+                      setMode("shown"); // 表示モードに切り替え
                       setShowHistory(false);
+                      console.log('履歴挿入完了:', { text });
                     }}
                   >
                     <div style={{ 
@@ -1701,6 +1713,7 @@ const ScribbleTranslator = () => {
                   </li>
                 ))}
               </ul>
+              </>
             )}
           </div>
         </div>
