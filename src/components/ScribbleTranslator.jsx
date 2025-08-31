@@ -696,8 +696,14 @@ const ScribbleTranslator = () => {
     const canvas = inkCanvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    const x = (e.touches?.[0]?.clientX ?? e.clientX) - rect.left;
-    const y = (e.touches?.[0]?.clientY ?? e.clientY) - rect.top;
+    
+    // スケール比を考慮した座標計算
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = e.touches?.[0]?.clientX ?? e.clientX;
+    const clientY = e.touches?.[0]?.clientY ?? e.clientY;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
     
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -710,8 +716,14 @@ const ScribbleTranslator = () => {
     const canvas = inkCanvasRef.current;
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
-    const x = (e.touches?.[0]?.clientX ?? e.clientX) - rect.left;
-    const y = (e.touches?.[0]?.clientY ?? e.clientY) - rect.top;
+    
+    // スケール比を考慮した座標計算
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = e.touches?.[0]?.clientX ?? e.clientX;
+    const clientY = e.touches?.[0]?.clientY ?? e.clientY;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
     
     ctx.lineTo(x, y);
     ctx.stroke();
@@ -1266,11 +1278,12 @@ const ScribbleTranslator = () => {
               />
                   <div style={{
                 display: "flex", 
-                flexDirection: window.innerWidth <= 768 ? "column" : "row",
-                gap: window.innerWidth <= 768 ? 12 : 16, // Goodpatch: ギャップを大きく
-                marginTop: 20, // Goodpatch: マージンを大きく
-                alignItems: "center", // Goodpatch: 中央揃え
-                justifyContent: window.innerWidth <= 768 ? "stretch" : "flex-end", // Goodpatch: 右寄せ（PC）
+                flexDirection: "row", // 常に横一列
+                gap: 12, // 統一されたギャップ
+                marginTop: 20, 
+                alignItems: "center", 
+                justifyContent: "center", // 中央揃え
+                flexWrap: "wrap", // 必要に応じて折り返し
               }}>
                                       <button onClick={recognizeInk} style={styles.btnPrimarySm}>✍️ 認識</button>
                       <button onClick={clearInk} style={styles.btnGhostSm}>🧹 クリア</button>
