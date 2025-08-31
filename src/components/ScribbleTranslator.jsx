@@ -1427,6 +1427,8 @@ const ScribbleTranslator = () => {
               ...styles.overlay,
               zIndex: 20, // 文字より上、線が途切れないように
               pointerEvents: "auto", // 常にイベントを受け取る
+              backgroundColor: "rgba(128, 128, 128, 0.1)", // 薄グレーでぐしゃぐしゃ範囲を表示
+              border: "1px dashed rgba(128, 128, 128, 0.3)", // 点線で範囲を明確化
             }}
               onPointerDown={startDrawPointer}
               onPointerMove={moveDrawPointer}
@@ -1441,6 +1443,7 @@ const ScribbleTranslator = () => {
                   inset: 0,
                   pointerEvents: "none",
                   zIndex: 25,
+                  backgroundColor: "rgba(128, 128, 128, 0.05)", // さらに薄いグレーで描画範囲を表示
                 }}
                 width={overlayRef.current?.offsetWidth || 800}
                 height={overlayRef.current?.offsetHeight || 600}
