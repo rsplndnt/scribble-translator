@@ -859,8 +859,27 @@ const ScribbleTranslator = () => {
       <div style={styles.toolbar}>
         {/* メイン操作ボタン群 */}
         <div style={styles.toolbarMain}>
-          <button onClick={toggleMic} style={styles.btnBlue}>
+          <button 
+            onClick={toggleMic} 
+            style={{
+              ...styles.btnBlue,
+              animation: isListening ? 'pulse 1.5s ease-in-out infinite' : 'none',
+              position: 'relative',
+            }}
+          >
             {isListening ? "⏹ 停止" : "🎤 音声入力"}
+            {isListening && (
+              <div style={{
+                position: 'absolute',
+                top: '-2px',
+                right: '-2px',
+                width: '8px',
+                height: '8px',
+                backgroundColor: '#ef4444',
+                borderRadius: '50%',
+                animation: 'blink 1s ease-in-out infinite',
+              }} />
+            )}
           </button>
           <button 
             onClick={() => {
@@ -1322,6 +1341,31 @@ const ScribbleTranslator = () => {
 };
 
 /* ===================== スタイル ===================== */
+// CSSアニメーションのキーフレーム
+const keyframes = `
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.3; }
+  }
+`;
+
+// スタイルシートにアニメーションを追加
+useEffect(() => {
+  const style = document.createElement('style');
+  style.textContent = keyframes;
+  document.head.appendChild(style);
+  
+  return () => {
+    document.head.removeChild(style);
+  };
+}, []);
+
 const styles = {
   container: {
     width: "100%",
