@@ -1098,33 +1098,54 @@ const ScribbleTranslator = () => {
         <div style={styles.toolbarMain}>
           {/* 入力方式選択ドロップダウン */}
           <div style={{ position: 'relative' }}>
-                        <button 
-              onClick={() => {
-                // 音声入力の場合は録音開始/停止
-                if (selectedInputMethod === 'voice') {
-                  toggleMic();
-                } else {
-                  // キーボード・手書きの場合はドロップダウン表示
-                  setShowInputDropdown(!showInputDropdown);
-                }
-              }}
-              style={{
-                ...styles.btnBlue,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                minWidth: '160px',
-                justifyContent: 'space-between',
-                backgroundColor: selectedInputMethod === 'voice' && isListening ? '#dc2626' : '#096FCA',
-              }}
-            >
-              <span>
-                {selectedInputMethod === 'voice' && (isListening ? '⏹ 停止' : '🎤 音声入力')}
-                {selectedInputMethod === 'keyboard' && '⌨️ キーボード'}
-                {selectedInputMethod === 'handwriting' && '✍️ 手書き'}
-              </span>
-              <span style={{ fontSize: '12px' }}>▼</span>
-            </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* 入力開始ボタン */}
+              <button 
+                onClick={() => {
+                  if (selectedInputMethod === 'voice') {
+                    toggleMic();
+                  } else if (selectedInputMethod === 'keyboard') {
+                    setInlineEditMode('keyboard');
+                    setInlineEditText('');
+                    const centerX = window.innerWidth / 2 - 225;
+                    const centerY = window.innerHeight / 2 - 100;
+                    setInlineEditPosition({ x: centerX, y: centerY });
+                    setIsComposing(false);
+                    setEnterPressCount(0);
+                  } else if (selectedInputMethod === 'handwriting') {
+                    setInlineEditMode('ink');
+                    setInlineEditText('');
+                    const centerX = window.innerWidth / 2 - 150;
+                    const centerY = window.innerHeight / 2 - 100;
+                    setInlineEditPosition({ x: centerX, y: centerY });
+                    setIsComposing(false);
+                    setEnterPressCount(0);
+                  }
+                }}
+                style={{
+                  ...styles.btnBlue,
+                  minWidth: '140px',
+                  backgroundColor: selectedInputMethod === 'voice' && isListening ? '#dc2626' : '#096FCA',
+                }}
+              >
+                {selectedInputMethod === 'voice' && (isListening ? '⏹ 停止' : '🎤 開始')}
+                {selectedInputMethod === 'keyboard' && '⌨️ 入力開始'}
+                {selectedInputMethod === 'handwriting' && '✍️ 入力開始'}
+              </button>
+              
+              {/* ドロップダウン表示ボタン */}
+              <button 
+                onClick={() => setShowInputDropdown(!showInputDropdown)}
+                style={{
+                  ...styles.btnGhost,
+                  padding: '8px 12px',
+                  minWidth: 'auto',
+                  border: '1px solid #d1d5db',
+                }}
+              >
+                ▼
+              </button>
+            </div>
             
             
             
