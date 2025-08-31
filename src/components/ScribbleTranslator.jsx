@@ -263,8 +263,8 @@ const ScribbleTranslator = () => {
     const y = e.clientY - r.top;
     setDrawPath((p) => {
       const last = p[p.length - 1];
-      // 最小移動量（ノイズ除去）
-      if (!last || Math.hypot(x - last.x, y - last.y) > 0.5) return [...p, { x, y }];
+      // 移動量の閾値を下げて、線が切れにくくする
+      if (!last || Math.hypot(x - last.x, y - last.y) > 0.1) return [...p, { x, y }];
       return p;
     });
   };
@@ -276,26 +276,7 @@ const ScribbleTranslator = () => {
     // 既存の stopDraw を流用
     stopDraw();
   };
-  const startDraw = (e) => {
-    if (!displayText) return;
-    setMode("selecting");
-    e.preventDefault();
-    setIsDrawing(true);
-    setDrawPath([getMousePos(e)]);
-  };
-  const moveDraw = (e) => {
-    if (!isDrawing) return;
-    e.preventDefault();
-    setDrawPath((p) => {
-      const newPos = getMousePos(e);
-      const last = p[p.length - 1];
-      // より細かい移動量でパスを更新（ぐしゃぐしゃ線らしく）
-      if (!last || Math.hypot(newPos.x - last.x, newPos.y - last.y) > 1) {
-        return [...p, newPos];
-      }
-      return p;
-    });
-  };
+
   const stopDraw = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
@@ -414,7 +395,7 @@ const ScribbleTranslator = () => {
     if (path.length < 2) return path;
     
     const interpolated = [];
-    const step = 2; // 補間の細かさ（小さいほど細かい）
+    const step = 1; // 補間の細かさを上げて、より滑らかに
     
     for (let i = 0; i < path.length - 1; i++) {
       const current = path[i];
@@ -814,20 +795,14 @@ const ScribbleTranslator = () => {
               })}
 
               {/* なぞりオーバーレイ */}
-          <div
-            ref={overlayRef}
-            style={styles.overlay}
-            onMouseDown={startDraw}
-            onMouseMove={moveDraw}
-            onMouseUp={stopDraw}
-            onMouseLeave={stopDraw}
-            onTouchStart={startDraw}
-            onTouchMove={moveDraw}
-            onTouchEnd={stopDraw}
-            onPointerDown={startDrawPointer}
-            onPointerMove={moveDrawPointer}
-            onPointerUp={stopDrawPointer}
-          >
+                      <div
+              ref={overlayRef}
+              style={styles.overlay}
+              onPointerDown={startDrawPointer}
+              onPointerMove={moveDrawPointer}
+              onPointerUp={stopDrawPointer}
+              onPointerLeave={stopDrawPointer}
+            >
                             {isDrawing && drawPath.length > 1 && (
                   <svg style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
                     <path
