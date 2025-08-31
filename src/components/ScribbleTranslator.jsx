@@ -920,7 +920,7 @@ const ScribbleTranslator = () => {
               </>
             )}
           </button>
-          <button 
+            <button 
             onClick={() => {
               setVisibleText(currentText);
               setSelectedGroups(new Set());
@@ -929,7 +929,7 @@ const ScribbleTranslator = () => {
             style={styles.btnPurple}
           >
             🗣️ 表示
-          </button>
+            </button>
           <button
             onClick={() => {
               setVisibleText("");
@@ -940,7 +940,7 @@ const ScribbleTranslator = () => {
           >
             🔄 リセット
           </button>
-        </div>
+      </div>
 
         {/* 入力方法選択ボタン群 */}
         <div style={styles.toolbarInput}>
@@ -1044,8 +1044,8 @@ const ScribbleTranslator = () => {
               />
               🔤 文節認識OFF
             </label>
+                    </div>
           </div>
-        </div>
 
         {/* 言語選択と情報表示 */}
         <div style={styles.toolbarInfo}>
@@ -1066,11 +1066,11 @@ const ScribbleTranslator = () => {
             <span style={styles.textCount}>📝 {currentText.length}文字</span>
           )}
         </div>
-      </div>
+          </div>
 
       {/* インライン編集ウィンドウ（常時表示） */}
       {inlineEditMode && inlineEditPosition && (
-        <div style={{
+            <div style={{
           position: "fixed", 
           left: window.innerWidth <= 768 ? "5vw" : inlineEditPosition.x, 
           top: window.innerWidth <= 768 ? "20vh" : inlineEditPosition.y - 60,
@@ -1148,7 +1148,7 @@ const ScribbleTranslator = () => {
                   }
                 }}
               />
-              <div style={{ 
+          <div style={{
                 display: "flex", 
                 flexDirection: window.innerWidth <= 768 ? "column" : "row",
                 gap: window.innerWidth <= 768 ? 6 : 8, 
@@ -1156,7 +1156,7 @@ const ScribbleTranslator = () => {
               }}>
                 <button onClick={finishInlineEdit} style={styles.btnPrimarySm}>✓ 保存</button>
                 <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
-              </div>
+          </div>
             </div>
           ) : (
             <div>
@@ -1181,7 +1181,7 @@ const ScribbleTranslator = () => {
                 onTouchMove={drawInk}
                 onTouchEnd={stopInkDrawing}
               />
-              <div style={{ 
+                  <div style={{
                 display: "flex", 
                 flexDirection: window.innerWidth <= 768 ? "column" : "row",
                 gap: window.innerWidth <= 768 ? 6 : 8, 
@@ -1190,10 +1190,10 @@ const ScribbleTranslator = () => {
                 <button onClick={recognizeInk} style={styles.btnPrimarySm}>✍️ 認識</button>
                 <button onClick={clearInk} style={styles.btnGhostSm}>🧹 クリア</button>
                 <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
-              </div>
-            </div>
+                  </div>
+                </div>
           )}
-          </div>
+            </div>
         )}
         
       <div style={styles.main}>
@@ -1209,7 +1209,7 @@ const ScribbleTranslator = () => {
                   <svg
                     key={c.id}
                     onClick={() => toggleGroupByIndex(c.index)}
-                    style={{
+                style={{
                       position: "absolute",
                       left: `${c.x}px`,
                       top: `${c.y}px`,
@@ -1301,15 +1301,15 @@ const ScribbleTranslator = () => {
                   <button onClick={() => startInlineEdit('ink')} style={styles.btnPrimarySm}>✍️ 手書き修正</button>
                   <button onClick={() => setSelectedGroups(new Set())} style={styles.btnGhostSm}>
                     ✖ キャンセル
-                  </button>
+              </button>
                 </div>
               )}
 
 
-            </div>
+                      </div>
 
                         {/* 2) 折り返し（日本語） */}
-                  <div style={{
+                      <div style={{
               marginBottom: 14, 
               opacity: 0.95,
               fontWeight: 800,
@@ -1334,7 +1334,7 @@ const ScribbleTranslator = () => {
                   {truncateText(triplet.back, 60)}
                 </text>
               </svg>
-            </div>
+                      </div>
             
                         {/* 3) 翻訳（選択言語） */}
                       <div style={{
@@ -1360,8 +1360,8 @@ const ScribbleTranslator = () => {
                   {truncateText(triplet.trans, 40)}
                 </text>
               </svg>
-            </div>
-                      </div>
+                    </div>
+                </div>
         ) : (
           <div style={styles.empty}>
             まず「🎤 音声入力」で話してから「🗣️ しゃべる→表示」を押してください
@@ -1461,14 +1461,16 @@ const styles = {
     },
   },
   toolbar: {
-    background: "#DDDDDD",
-    border: "1px solid #e5e7eb",
-    borderRadius: 12,
-    padding: "16px 20px",
+    background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+    border: "2px solid #e2e8f0",
+    borderRadius: "20px",
+    padding: "20px 24px",
     marginBottom: 24,
     display: "flex",
     flexDirection: "column",
-    gap: 16,
+    gap: 20,
+    boxShadow: "0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8)",
+    backdropFilter: "blur(10px)",
   },
   toolbarMain: {
     display: "flex",
@@ -1493,57 +1495,122 @@ const styles = {
     fontSize: 14,
   },
   btnBlue: {
-    padding: "8px 14px",
-    background: "#3b82f6",
+    padding: "12px 20px",
+    background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
     color: "#fff",
     border: "none",
-    borderRadius: 8,
-    fontWeight: 700,
-    boxShadow: "0 2px 10px rgba(59,130,246,.25)",
+    borderRadius: "16px",
+    fontWeight: "800",
+    fontSize: "15px",
+    letterSpacing: "0.5px",
+    boxShadow: "0 8px 25px rgba(59,130,246,0.3), 0 4px 10px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2)",
     cursor: "pointer",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    position: "relative",
+    overflow: "hidden",
+    "&:hover": {
+      transform: "translateY(-2px)",
+      boxShadow: "0 12px 35px rgba(59,130,246,0.4), 0 6px 15px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.3)",
+    },
+    "&:active": {
+      transform: "translateY(0px)",
+      boxShadow: "0 4px 15px rgba(59,130,246,0.3), 0 2px 5px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
+    },
     "@media (max-width: 768px)": {
-      padding: "10px 16px",
+      padding: "14px 18px",
       fontSize: "14px",
-      minWidth: "80px",
+      minWidth: "90px",
+      borderRadius: "14px",
     },
   },
   btnPurple: {
-    padding: "8px 14px",
-    background: "#8B5CF6",
+    padding: "12px 20px",
+    background: "linear-gradient(135deg, #8B5CF6 0%, #6d28d9 100%)",
     color: "#fff",
     border: "none",
-    borderRadius: 8,
-    fontWeight: 700,
-    boxShadow: "0 2px 10px rgba(139,92,246,.25)",
+    borderRadius: "16px",
+    fontWeight: "800",
+    fontSize: "15px",
+    letterSpacing: "0.5px",
+    boxShadow: "0 8px 25px rgba(139,92,246,0.3), 0 4px 10px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2)",
     cursor: "pointer",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    position: "relative",
+    overflow: "hidden",
+    "&:hover": {
+      transform: "translateY(-2px)",
+      boxShadow: "0 12px 35px rgba(139,92,246,0.4), 0 6px 15px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.3)",
+    },
+    "&:active": {
+      transform: "translateY(0px)",
+      boxShadow: "0 4px 15px rgba(139,92,246,0.3), 0 2px 5px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
+    },
     "@media (max-width: 768px)": {
-      padding: "10px 16px",
+      padding: "14px 18px",
       fontSize: "14px",
-      minWidth: "80px",
+      minWidth: "90px",
+      borderRadius: "14px",
     },
   },
   btnGhost: {
-    padding: "8px 14px",
-    background: "#f3f4f6",
-    border: "1px solid #e5e7eb",
-    borderRadius: 8,
-    fontWeight: 700,
+    padding: "12px 20px",
+    background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+    color: "#475569",
+    border: "2px solid #e2e8f0",
+    borderRadius: "16px",
+    fontWeight: "700",
+    fontSize: "15px",
+    letterSpacing: "0.3px",
+    boxShadow: "0 4px 15px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
     cursor: "pointer",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    position: "relative",
+    overflow: "hidden",
+    "&:hover": {
+      transform: "translateY(-1px)",
+      background: "linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%)",
+      borderColor: "#cbd5e1",
+      boxShadow: "0 6px 20px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)",
+    },
+    "&:active": {
+      transform: "translateY(0px)",
+      boxShadow: "0 2px 10px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7)",
+    },
     "@media (max-width: 768px)": {
-      padding: "10px 16px",
+      padding: "14px 18px",
       fontSize: "14px",
-      minWidth: "80px",
+      minWidth: "90px",
+      borderRadius: "14px",
     },
   },
   btnDanger: {
-    padding: "8px 14px",
-    background: "#FF7669",
+    padding: "12px 20px",
+    background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
     color: "#fff",
     border: "none",
-    borderRadius: 8,
-    fontWeight: 700,
+    borderRadius: "16px",
+    fontWeight: "800",
+    fontSize: "15px",
+    letterSpacing: "0.5px",
+    boxShadow: "0 8px 25px rgba(239,68,68,0.3), 0 4px 10px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2)",
     cursor: "pointer",
-    boxShadow: "0 2px 10px rgba(255,118,105,.25)",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    position: "relative",
+    overflow: "hidden",
+    "&:hover": {
+      transform: "translateY(-2px)",
+      boxShadow: "0 12px 35px rgba(239,68,68,0.4), 0 6px 15px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.3)",
+    },
+    "&:active": {
+      transform: "translateY(0px)",
+      boxShadow: "0 4px 15px rgba(239,68,68,0.3), 0 2px 5px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.1)",
+    },
+    "@media (max-width: 768px)": {
+      padding: "14px 18px",
+      fontSize: "14px",
+      minWidth: "90px",
+      borderRadius: "14px",
+    },
   },
   select: { 
     padding: "8px 12px", 
@@ -1633,42 +1700,78 @@ const styles = {
     cursor: "pointer",
   },
   btnGhostSm: {
-    padding: "8px 12px",
-    border: "1px solid #e5e7eb",
-    background: "#fff",
-    borderRadius: 8,
-    fontWeight: 700,
+    padding: "10px 16px",
+    border: "2px solid #e2e8f0",
+    background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
+    borderRadius: "12px",
+    fontWeight: "700",
+    fontSize: "14px",
+    color: "#475569",
     cursor: "pointer",
-    minHeight: "32px",
-    minWidth: "80px",
+    minHeight: "36px",
+    minWidth: "90px",
     userSelect: "none",
     touchAction: "manipulation",
+    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
+    "&:hover": {
+      transform: "translateY(-1px)",
+      background: "linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%)",
+      borderColor: "#cbd5e1",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.9)",
+    },
+    "&:active": {
+      transform: "translateY(0px)",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7)",
+    },
   },
   btnDangerSm: {
-    padding: "8px 12px",
+    padding: "10px 16px",
     border: "none",
-    background: "#ef4444",
+    background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
     color: "#fff",
-    borderRadius: 8,
-    fontWeight: 700,
+    borderRadius: "12px",
+    fontWeight: "700",
+    fontSize: "14px",
     cursor: "pointer",
-    minHeight: "32px",
-    minWidth: "80px",
+    minHeight: "36px",
+    minWidth: "90px",
     userSelect: "none",
     touchAction: "manipulation",
+    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+    boxShadow: "0 2px 8px rgba(239,68,68,0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+    "&:hover": {
+      transform: "translateY(-1px)",
+      boxShadow: "0 4px 12px rgba(239,68,68,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
+    },
+    "&:active": {
+      transform: "translateY(0px)",
+      boxShadow: "0 1px 4px rgba(239,68,68,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
+    },
   },
   btnPrimarySm: {
-    padding: "8px 12px",
+    padding: "10px 16px",
     border: "none",
-    background: "#096FCA",
+    background: "linear-gradient(135deg, #096FCA 0%, #1e40af 100%)",
     color: "#fff",
-    borderRadius: 8,
-    fontWeight: 700,
+    borderRadius: "12px",
+    fontWeight: "700",
+    fontSize: "14px",
     cursor: "pointer",
-    minHeight: "32px",
-    minWidth: "80px",
+    minHeight: "36px",
+    minWidth: "90px",
     userSelect: "none",
     touchAction: "manipulation",
+    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+    boxShadow: "0 2px 8px rgba(9,111,202,0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+    "&:hover": {
+      transform: "translateY(-1px)",
+      boxShadow: "0 4px 12px rgba(9,111,202,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
+    },
+    "&:active": {
+      transform: "translateY(0px)",
+      boxShadow: "0 1px 4px rgba(9,111,202,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
+    },
   },
 };
 
