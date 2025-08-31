@@ -863,22 +863,50 @@ const ScribbleTranslator = () => {
             onClick={toggleMic} 
             style={{
               ...styles.btnBlue,
-              animation: isListening ? 'pulse 1.5s ease-in-out infinite' : 'none',
+              animation: isListening ? 'float 3s ease-in-out infinite, glow 2s ease-in-out infinite' : 'none',
               position: 'relative',
+              overflow: 'hidden',
             }}
           >
             {isListening ? "⏹ 停止" : "🎤 音声入力"}
+            
+            {/* ほわほわする波紋エフェクト */}
             {isListening && (
-              <div style={{
-                position: 'absolute',
-                top: '-2px',
-                right: '-2px',
-                width: '8px',
-                height: '8px',
-                backgroundColor: '#ef4444',
-                borderRadius: '50%',
-                animation: 'blink 1s ease-in-out infinite',
-              }} />
+              <>
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '4px',
+                  height: '4px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                  borderRadius: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  animation: 'ripple 2s ease-out infinite',
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '3px',
+                  height: '3px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  borderRadius: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  animation: 'ripple 2s ease-out infinite 0.5s',
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '2px',
+                  height: '2px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                  borderRadius: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  animation: 'ripple 2s ease-out infinite 1s',
+                }} />
+              </>
             )}
           </button>
           <button 
@@ -1343,15 +1371,47 @@ const ScribbleTranslator = () => {
 /* ===================== スタイル ===================== */
 // CSSアニメーションのキーフレーム
 const keyframes = `
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
+  @keyframes float {
+    0% { 
+      transform: translateY(0px) scale(1);
+      opacity: 0.8;
+    }
+    25% { 
+      transform: translateY(-3px) scale(1.02);
+      opacity: 1;
+    }
+    50% { 
+      transform: translateY(-1px) scale(1.05);
+      opacity: 0.9;
+    }
+    75% { 
+      transform: translateY(-4px) scale(1.03);
+      opacity: 1;
+    }
+    100% { 
+      transform: translateY(0px) scale(1);
+      opacity: 0.8;
+    }
   }
   
-  @keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0.3; }
+  @keyframes ripple {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes glow {
+    0%, 100% {
+      box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.6);
+    }
   }
 `;
 
