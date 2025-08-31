@@ -87,7 +87,11 @@ const ScribbleTranslator = () => {
   const [isBunsetsuMode, setIsBunsetsuMode] = useState(false); // 文節認識モード（デフォルトOFF）
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
-  const [voiceHistory, setVoiceHistory] = useState([]); // 音声認識履歴（最大10個）
+  const [voiceHistory, setVoiceHistory] = useState([
+    "テスト履歴1",
+    "テスト履歴2", 
+    "テスト履歴3"
+  ]); // 音声認識履歴（最大10個）
   const [showHistory, setShowHistory] = useState(false); // 履歴表示フラグ
 
   // タイル描画
@@ -150,6 +154,7 @@ const ScribbleTranslator = () => {
           // 最終結果を履歴に追加
           setVoiceHistory(prev => {
             const newHistory = [finalTranscript, ...prev.slice(0, 9)]; // 最新を先頭に、最大10個
+            console.log('履歴更新:', { finalTranscript, newHistory });
             return newHistory;
           });
         }
@@ -1090,13 +1095,16 @@ const ScribbleTranslator = () => {
           
           {/* 履歴表示ボタン */}
           <button 
-            onClick={() => setShowHistory(!showHistory)} 
+            onClick={() => {
+              console.log('履歴ボタンクリック:', { showHistory, voiceHistory });
+              setShowHistory(!showHistory);
+            }} 
             style={{
               ...styles.btnGhost,
               backgroundColor: showHistory ? "rgba(9, 111, 202, 0.1)" : "transparent"
             }}
           >
-            📋 履歴 ({voiceHistory.length})
+            📋 履歴挿入 ({voiceHistory.length})
           </button>
           
           <button 
@@ -1650,7 +1658,12 @@ const ScribbleTranslator = () => {
                       e.target.style.borderColor = "#E5E7EB";
                     }}
                     onClick={() => {
-                      setCurrentText(prev => prev + text); // 既存テキストに追加
+                      console.log('履歴クリック:', { text, currentText: currentText });
+                      setCurrentText(prev => {
+                        const newText = prev + text;
+                        console.log('新しいテキスト:', { prev, text, newText });
+                        return newText;
+                      }); // 既存テキストに追加
                       setShowHistory(false);
                     }}
                   >
