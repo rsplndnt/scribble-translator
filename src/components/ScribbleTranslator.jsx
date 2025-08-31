@@ -46,6 +46,7 @@ const ScribbleTranslator = () => {
   const [triplet, setTriplet] = useState({ src: "", back: "", trans: "" }); // 上/中/下
   const [bunsetsuGroups, setBunsetsuGroups] = useState([]); // {indices:number[], text:string}
   const [selectedGroups, setSelectedGroups] = useState(new Set()); // 文節インデックス
+  const [isBunsetsuMode, setIsBunsetsuMode] = useState(true); // 文節認識モード
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
 
@@ -923,6 +924,23 @@ const ScribbleTranslator = () => {
           >
             ✍️ 手書き
           </button>
+          
+          {/* 文節認識のオンオフボタン */}
+          <button 
+            onClick={() => {
+              setIsBunsetsuMode(m => !m);
+              setSelectedGroups(new Set()); // 選択状態をクリア
+            }} 
+            style={{
+              ...styles.btnGhost,
+              backgroundColor: isBunsetsuMode ? '#10b981' : '#e5e7eb',
+              color: isBunsetsuMode ? '#fff' : '#374151',
+              border: isBunsetsuMode ? '1px solid #059669' : '1px solid #d1d5db',
+            }}
+            title={isBunsetsuMode ? "文節認識: オン" : "文節認識: オフ"}
+          >
+            {isBunsetsuMode ? "🤖 文節ON" : "🔤 文字ON"}
+          </button>
         </div>
 
         {/* 言語選択と情報表示 */}
@@ -937,6 +955,20 @@ const ScribbleTranslator = () => {
             <option value="ko">🇰🇷 韓国語</option>
             <option value="zh">🇨🇳 中国語</option>
           </select>
+          
+          {/* 文節認識の状態表示 */}
+          <span style={{
+            padding: "6px 12px",
+            borderRadius: "6px",
+            fontSize: "14px",
+            fontWeight: "600",
+            backgroundColor: isBunsetsuMode ? '#d1fae5' : '#fef3c7',
+            color: isBunsetsuMode ? '#065f46' : '#92400e',
+            border: `1px solid ${isBunsetsuMode ? '#a7f3d0' : '#fde68a'}`,
+          }}>
+            {isBunsetsuMode ? "🤖 文節認識" : "🔤 文字認識"}
+          </span>
+          
           {isListening ? (
             <span style={styles.listeningIndicator}>🎤 音声入力中…</span>
           ) : (
