@@ -778,11 +778,13 @@ const ScribbleTranslator = () => {
           </select>
           <button 
             onClick={() => {
+              console.log('キーボード入力ボタンがクリックされました');
               setInlineEditMode('keyboard');
               setInlineEditText('');
               // 画面中央付近に配置
               const centerX = window.innerWidth / 2 - 100;
               const centerY = window.innerHeight / 2 - 100;
+              console.log('編集ウィンドウ位置:', { x: centerX, y: centerY });
               setInlineEditPosition({ x: centerX, y: centerY });
             }} 
             style={styles.btnGhost}
@@ -791,11 +793,13 @@ const ScribbleTranslator = () => {
           </button>
           <button 
             onClick={() => {
+              console.log('手書き入力ボタンがクリックされました');
               setInlineEditMode('ink');
               setInlineEditText('');
               // 画面中央付近に配置
               const centerX = window.innerWidth / 2 - 100;
               const centerY = window.innerHeight / 2 - 100;
+              console.log('編集ウィンドウ位置:', { x: centerX, y: centerY });
               setInlineEditPosition({ x: centerX, y: centerY });
             }} 
             style={styles.btnGhost}
@@ -816,6 +820,74 @@ const ScribbleTranslator = () => {
           </button>
         </div>
       </div>
+
+      {/* インライン編集ウィンドウ（常時表示） */}
+      {inlineEditMode && inlineEditPosition && (
+        <div style={{
+          position: "fixed", 
+          left: inlineEditPosition.x, 
+          top: inlineEditPosition.y - 60,
+          background: "#fff",
+          border: "2px solid #096FCA",
+          borderRadius: "8px",
+          padding: "12px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          zIndex: 1000,
+          minWidth: "200px"
+        }}>
+          {inlineEditMode === 'keyboard' ? (
+            <div>
+              <input
+                type="text"
+                value={inlineEditText}
+                onChange={(e) => setInlineEditText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') finishInlineEdit();
+                  if (e.key === 'Escape') cancelInlineEdit();
+                }}
+                style={{
+                  width: "100%",
+                  padding: "8px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  fontSize: "16px"
+                }}
+                autoFocus
+              />
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button onClick={finishInlineEdit} style={styles.btnPrimarySm}>✓ 保存</button>
+                <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <canvas
+                ref={inkCanvasRef}
+                width={300}
+                height={150}
+                style={{
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  background: "#fff",
+                  cursor: "crosshair"
+                }}
+                onMouseDown={startInkDrawing}
+                onMouseMove={drawInk}
+                onMouseUp={stopInkDrawing}
+                onMouseLeave={stopInkDrawing}
+                onTouchStart={startInkDrawing}
+                onTouchMove={drawInk}
+                onTouchEnd={stopInkDrawing}
+              />
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button onClick={recognizeInk} style={styles.btnPrimarySm}>✍️ 認識</button>
+                <button onClick={clearInk} style={styles.btnGhostSm}>🧹 クリア</button>
+                <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={styles.main}>
         {/* ===== 三段：原文 → 折り返し → 翻訳 ===== */}
@@ -899,73 +971,7 @@ const ScribbleTranslator = () => {
             </div>
           )}
 
-              {/* インライン編集ウィンドウ */}
-              {inlineEditMode && inlineEditPosition && (
-          <div style={{
-                  position: "absolute", 
-                  left: inlineEditPosition.x, 
-                  top: inlineEditPosition.y - 60,
-                  background: "#fff",
-                  border: "2px solid #096FCA",
-                  borderRadius: "8px",
-                  padding: "12px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  zIndex: 1000,
-                  minWidth: "200px"
-                }}>
-                  {inlineEditMode === 'keyboard' ? (
-                    <div>
-                      <input
-                        type="text"
-                        value={inlineEditText}
-                        onChange={(e) => setInlineEditText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') finishInlineEdit();
-                          if (e.key === 'Escape') cancelInlineEdit();
-                        }}
-                        style={{
-                          width: "100%",
-                          padding: "8px",
-                          border: "1px solid #ddd",
-                          borderRadius: "4px",
-                          fontSize: "16px"
-                        }}
-                        autoFocus
-                      />
-                      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                        <button onClick={finishInlineEdit} style={styles.btnPrimarySm}>✓ 保存</button>
-                        <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
-          </div>
-            </div>
-                                    ) : (
-                    <div>
-                      <canvas
-                        ref={inkCanvasRef}
-                        width={300}
-                        height={150}
-                        style={{
-                          border: "1px solid #ddd",
-                          borderRadius: "4px",
-                          background: "#fff",
-                          cursor: "crosshair"
-                        }}
-                        onMouseDown={startInkDrawing}
-                        onMouseMove={drawInk}
-                        onMouseUp={stopInkDrawing}
-                        onMouseLeave={stopInkDrawing}
-                        onTouchStart={startInkDrawing}
-                        onTouchMove={drawInk}
-                        onTouchEnd={stopInkDrawing}
-                      />
-                      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                        <button onClick={recognizeInk} style={styles.btnPrimarySm}>✍️ 認識</button>
-                        <button onClick={clearInk} style={styles.btnGhostSm}>🧹 クリア</button>
-                        <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
-                  </div>
-                  </div>
-                  )}
-                </div>
-              )}
+
                       </div>
 
                         {/* 2) 折り返し（日本語） */}
