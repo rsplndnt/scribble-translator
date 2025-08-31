@@ -1250,13 +1250,11 @@ const ScribbleTranslator = () => {
                 style={{
                   width: window.innerWidth <= 768 ? "100%" : "300px",
                   height: window.innerWidth <= 768 ? "140px" : "150px",
-                  border: "1px solid rgba(9, 111, 202, 0.3)", // プライマリーカラーの薄いボーダー
+                  border: "2px dashed rgba(9, 111, 202, 0.4)", // 点線ボーダーで編集エリアを示す
                   borderRadius: "8px", // Goodpatch: 角丸
-                  background: "rgba(255, 255, 255, 0.2)", // 高透過度で下の文字が見える
+                  background: "transparent", // 完全透明
                   cursor: "crosshair",
                   touchAction: "none",
-                  boxShadow: "inset 0 1px 3px rgba(0,0,0,0.05)", // Goodpatch: 内側の軽いシャドウ
-                  backdropFilter: "blur(2px)", // 背景ぼかし効果
                 }}
                 onMouseDown={startInkDrawing}
                 onMouseMove={drawInk}
