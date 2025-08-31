@@ -255,14 +255,14 @@ const ScribbleTranslator = () => {
   useEffect(() => {
     const el = topRef.current;
     const w = el?.offsetWidth || 900;
-    const margin = 20;
+    const margin = 16; // 左端のマージンを調整（右寄りを修正）
     const maxW = Math.max(200, w - margin * 2);
     const N = Math.max(1, displayText.length);
-    // 文字サイズを自動調整（最小24〜最大48）
-    const spacing = 8;
+    // 文字サイズを自動調整（最小32〜最大52に拡大）
+    const spacing = 4; // 文字間隔を狭く
     const charSize = Math.max(
-      24,
-      Math.min(48, (maxW - (N - 1) * spacing) / N)
+      32, // 最小サイズを32に拡大
+      Math.min(52, (maxW - (N - 1) * spacing) / N) // 最大サイズを52に拡大
     );
     const lineHeight = charSize + 8; // 行間
     const pos = [];
@@ -1341,9 +1341,9 @@ const ScribbleTranslator = () => {
                       fontWeight="800"
                       fill="#374151"
                       stroke="#FFFFFF"
-                      strokeWidth="2"
+                      strokeWidth="1.5"
                       paintOrder="stroke fill"
-                      letterSpacing="0.5px"
+                      letterSpacing="0.2px"
                     >
                       {c.char === " " ? "\u00A0" : c.char}
                     </text>
@@ -1430,7 +1430,7 @@ const ScribbleTranslator = () => {
                   y="20"
                   textAnchor="start"
                   dominantBaseline="middle"
-                  fontSize="clamp(16px, 4vw, 20px)"
+                  fontSize="clamp(18px, 4.5vw, 24px)"
                   fontWeight="800"
                   fill="#374151"
                   stroke="#FFFFFF"
@@ -1464,7 +1464,7 @@ const ScribbleTranslator = () => {
                   y="40"
                   textAnchor="start"
                   dominantBaseline="middle"
-                  fontSize="clamp(24px, 8vw, 42px)"
+                  fontSize="clamp(28px, 9vw, 48px)"
                   fontWeight="800"
                   fill="#374151"
                   stroke="#FFFFFF"
