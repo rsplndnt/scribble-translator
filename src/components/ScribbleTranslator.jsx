@@ -282,11 +282,27 @@ const ScribbleTranslator = () => {
     setMode("selecting");
     e.preventDefault();
     e.stopPropagation();
-    try { overlayRef.current?.setPointerCapture?.(e.pointerId); } catch {}
-    setIsDrawing(true);
+    
     const r = overlayRef.current.getBoundingClientRect();
     const x = e.clientX - r.left;
     const y = e.clientY - r.top;
+    
+    // クリック位置が文字の上にある場合は、その文字を選択/解除
+    const clickedChar = tilePositions.find(c => {
+      const distance = Math.hypot(x - c.x, y - c.y);
+      return distance <= c.charSize / 2 + 10; // 文字の半径 + 余裕
+    });
+    
+    if (clickedChar) {
+      // 文字クリック：選択/解除処理
+      console.log('🔥 文字クリック検出:', clickedChar.index);
+      toggleGroupByIndex(clickedChar.index);
+      return; // 描画処理はしない
+    }
+    
+    // 空白部分クリック：描画開始
+    try { overlayRef.current?.setPointerCapture?.(e.pointerId); } catch {}
+    setIsDrawing(true);
     setDrawPath([{ x, y }]);
   };
   const moveDrawPointer = (e) => {
@@ -1201,18 +1217,13 @@ const ScribbleTranslator = () => {
                 return (
                   <svg
                     key={c.id}
-                    onClick={() => toggleGroupByIndex(c.index)}
-                    onPointerDown={(e) => {
-                      e.stopPropagation(); // オーバーレイへの伝播を防ぐ
-                      toggleGroupByIndex(c.index);
-                    }}
                 style={{
                       position: "absolute",
                       left: `${c.x}px`,
                       top: `${c.y}px`,
                       transform: "translate(-50%,-50%)",
                       cursor: "pointer",
-                      zIndex: 10, // オーバーレイより上に配置
+                      zIndex: 10, // オーバーレイより下だが見える位置
                       backgroundColor: selected ? "rgba(9, 111, 202, 0.2)" : "transparent",
                       borderRadius: selected ? "4px" : "0px",
                       padding: selected ? "2px 4px" : "0px",
@@ -1246,7 +1257,8 @@ const ScribbleTranslator = () => {
             ref={overlayRef}
             style={{
               ...styles.overlay,
-              zIndex: 1, // 文字より下に配置
+              zIndex: 15, // 文字より上に配置
+              pointerEvents: "auto", // 常にイベントを受け取る
             }}
               onPointerDown={startDrawPointer}
               onPointerMove={moveDrawPointer}
