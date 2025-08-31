@@ -627,9 +627,36 @@ const ScribbleTranslator = () => {
         .join('');
     }
     
+    // 選択された文字の中央位置を計算
+    const selectedIdx = bunsetsuGroups.length > 0 
+      ? [...selectedGroups].flatMap(gIdx => bunsetsuGroups[gIdx]?.indices || [])
+      : [...selectedGroups];
+    
+    const pts = selectedIdx.map((i) => {
+      const p = tilePositions[i];
+      return p ? { x: p.x, y: p.y } : null;
+    }).filter(Boolean);
+    
+    let editPosition = floatPos; // デフォルトはfloatPos
+    if (pts.length > 0) {
+      // 選択された文字の中央上部に配置
+      const centerX = pts.reduce((sum, p) => sum + p.x, 0) / pts.length;
+      const topY = Math.min(...pts.map(p => p.y));
+      
+      // topRefの位置を取得してオフセットを調整
+      const topRefRect = topRef.current?.getBoundingClientRect();
+      const offsetX = topRefRect ? topRefRect.left : 0;
+      const offsetY = topRefRect ? topRefRect.top : 0;
+      
+      editPosition = { 
+        x: centerX + offsetX, // 画面座標に変換
+        y: topY + offsetY - 80 // 選択された文字の上に十分な余裕を持って配置
+      };
+    }
+    
     setInlineEditText(text);
     setInlineEditMode(mode);
-    setInlineEditPosition(floatPos);
+    setInlineEditPosition(editPosition);
     
     // 日本語入力状態をリセット
     setIsComposing(false);
@@ -1080,8 +1107,8 @@ const ScribbleTranslator = () => {
               />
               🔤 文節認識OFF
             </label>
-                    </div>
-          </div>
+        </div>
+      </div>
 
         {/* 言語選択と情報表示 */}
         <div style={styles.toolbarInfo}>
@@ -1108,8 +1135,8 @@ const ScribbleTranslator = () => {
       {inlineEditMode && inlineEditPosition && (
             <div style={{
           position: "fixed", 
-          left: window.innerWidth <= 768 ? "5vw" : inlineEditPosition.x, 
-          top: window.innerWidth <= 768 ? "20vh" : inlineEditPosition.y - 60,
+          left: window.innerWidth <= 768 ? "5vw" : Math.max(10, Math.min(window.innerWidth - 460, inlineEditPosition.x - 225)), // 画面端を考慮
+          top: window.innerWidth <= 768 ? "20vh" : Math.max(10, inlineEditPosition.y), // 選択した文字のすぐ上
           right: window.innerWidth <= 768 ? "5vw" : "auto",
           background: "#DDDDDD", // Goodpatch: 背景色統一
           border: "1px solid #e5e7eb", // Goodpatch: 薄いボーダー
@@ -1242,7 +1269,7 @@ const ScribbleTranslator = () => {
                   </div>
                 </div>
           )}
-            </div>
+          </div>
         )}
         
       <div style={styles.main}>
@@ -1257,10 +1284,10 @@ const ScribbleTranslator = () => {
                   ? charToGroup.get(c.index) 
                   : c.index;
                 const selected = gIdx !== undefined && selectedGroups.has(gIdx);
-                return (
+                  return (
                   <svg
                     key={c.id}
-                style={{
+                      style={{
                       position: "absolute",
                       left: `${c.x}px`,
                       top: `${c.y}px`,
@@ -1336,7 +1363,7 @@ const ScribbleTranslator = () => {
 
                             {/* 選択時のフローティング操作 */}
               {mode === "selecting" && floatPos && selectedGroups.size > 0 && !inlineEditMode && (
-                <div style={{ 
+            <div style={{
                   position: "absolute", 
                   left: floatPos.x, 
                   top: floatPos.y, 
@@ -1358,14 +1385,14 @@ const ScribbleTranslator = () => {
                   <button onClick={() => setSelectedGroups(new Set())} style={styles.btnGhostSm}>
                     ✖ キャンセル
               </button>
-                </div>
-              )}
+            </div>
+          )}
 
 
-                      </div>
+        </div>
 
                         {/* 2) 折り返し（日本語） */}
-                      <div style={{
+          <div style={{
               marginBottom: 14, 
               opacity: 0.95,
               fontWeight: 800,
@@ -1398,10 +1425,10 @@ const ScribbleTranslator = () => {
                   )}
                 </text>
               </svg>
-                      </div>
+            </div>
             
                         {/* 3) 翻訳（選択言語） */}
-                      <div style={{
+                  <div style={{
               fontWeight: 800,
               letterSpacing: "0.5px",
               textAlign: "left"
@@ -1432,8 +1459,8 @@ const ScribbleTranslator = () => {
                   )}
                 </text>
               </svg>
-                    </div>
-                </div>
+                      </div>
+                      </div>
         ) : (
           <div style={styles.empty}>
             まず「🎤 音声入力」で話してから「🗣️ 表示」を押してください
