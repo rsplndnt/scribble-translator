@@ -314,7 +314,7 @@ const ScribbleTranslator = () => {
     }
     
     // デバッグ用：一時的に折り返し検出を無効化
-    const debugMode = false; // デバッグモード（falseで折り返し検出を有効化）
+    const debugMode = true; // デバッグモード（trueで折り返し検出を無効化）
     
     if (!debugMode && !hasChanges) {
       console.log('直線的すぎる線のため、選択をキャンセル');
@@ -379,16 +379,26 @@ const ScribbleTranslator = () => {
 
   /* ------ 線の折り返し検出 ------ */
   const hasSignificantDirectionChanges = (path) => {
-    if (path.length < 3) return false; // 最低3点必要（緩和）
+    console.log('=== 折り返し検出開始 ===');
+    console.log('パス長:', path.length);
+    
+    if (path.length < 3) {
+      console.log('パスが短すぎる（3点未満）');
+      return false;
+    }
     
     let directionChanges = 0;
-    const minAngle = 20; // 20度以上の角度変化を折り返しとみなす（緩和）
-    const minDistance = 8; // 最小距離を小さく（緩和）
+    const minAngle = 15; // 15度以上の角度変化を折り返しとみなす（さらに緩和）
+    const minDistance = 5; // 最小距離をさらに小さく（さらに緩和）
+    
+    console.log('検出条件:', { minAngle, minDistance });
     
     // 直線性チェック：始点と終点を結ぶ直線からの平均距離
     const startPoint = path[0];
     const endPoint = path[path.length - 1];
     const totalDistance = Math.hypot(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+    
+    console.log('直線性チェック:', { startPoint, endPoint, totalDistance: totalDistance.toFixed(2) });
     
     if (totalDistance > 0) {
       let totalDeviation = 0;
@@ -404,12 +414,16 @@ const ScribbleTranslator = () => {
       }
       const avgDeviation = totalDeviation / (path.length - 2);
       
-      // 平均偏差が小さすぎる場合は直線とみなす（閾値を下げて緩和）
-      if (avgDeviation < 5) {
+      console.log('平均偏差:', avgDeviation.toFixed(2));
+      
+      // 平均偏差が小さすぎる場合は直線とみなす（閾値をさらに下げて緩和）
+      if (avgDeviation < 3) {
         console.log('直線性が高すぎるため、選択をキャンセル');
         return false;
       }
     }
+    
+    console.log('角度変化の検出開始...');
     
     for (let i = 1; i < path.length - 1; i++) {
       const prev = path[i - 1];
@@ -432,21 +446,33 @@ const ScribbleTranslator = () => {
       const len1 = Math.hypot(v1.x, v1.y);
       const len2 = Math.hypot(v2.x, v2.y);
       
-      if (len1 < minDistance || len2 < minDistance) continue;
+      if (len1 < minDistance || len2 < minDistance) {
+        console.log(`点${i}: 距離が短すぎる (${len1.toFixed(2)}, ${len2.toFixed(2)})`);
+        continue;
+      }
       
       // 角度を計算
       const dot = v1.x * v2.x + v1.y * v2.y;
       const cosAngle = dot / (len1 * len2);
       const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle))) * (180 / Math.PI);
       
+      console.log(`点${i}: 角度=${angle.toFixed(1)}度, 距離=(${len1.toFixed(2)}, ${len2.toFixed(2)})`);
+      
       // 角度変化が大きい場合
       if (angle > minAngle) {
         directionChanges++;
+        console.log(`点${i}: 折り返し検出！ (${angle.toFixed(1)}度 > ${minAngle}度)`);
       }
     }
     
+    console.log(`総折り返し数: ${directionChanges}`);
+    
     // 折り返しが1回以上ある場合を有効とする（緩和）
-    return directionChanges >= 1;
+    const result = directionChanges >= 1;
+    console.log(`最終結果: ${result} (${directionChanges} >= 1)`);
+    console.log('=== 折り返し検出終了 ===');
+    
+    return result;
   };
 
   /* ------ パス補間（ぐしゃぐしゃ線を滑らかに） ------ */
