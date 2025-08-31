@@ -87,6 +87,8 @@ const ScribbleTranslator = () => {
   const [isBunsetsuMode, setIsBunsetsuMode] = useState(false); // 文節認識モード（デフォルトOFF）
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
+  const [voiceHistory, setVoiceHistory] = useState([]); // 音声認識履歴（最大10個）
+  const [showHistory, setShowHistory] = useState(false); // 履歴表示フラグ
 
   // タイル描画
   const topRef = useRef(null);
@@ -142,7 +144,15 @@ const ScribbleTranslator = () => {
         for (let i = e.resultIndex; i < e.results.length; i++) {
           if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
           }
-        if (finalTranscript) setCurrentText((p) => p + finalTranscript);
+        if (finalTranscript) {
+          setCurrentText((p) => p + finalTranscript);
+          
+          // 最終結果を履歴に追加
+          setVoiceHistory(prev => {
+            const newHistory = [finalTranscript, ...prev.slice(0, 9)]; // 最新を先頭に、最大10個
+            return newHistory;
+          });
+        }
       };
       rec.onerror = () => setIsListening(false);
       rec.onend = () => setIsListening(false);
@@ -1077,7 +1087,19 @@ const ScribbleTranslator = () => {
               </>
             )}
           </button>
-            <button 
+          
+          {/* 履歴表示ボタン */}
+          <button 
+            onClick={() => setShowHistory(!showHistory)} 
+            style={{
+              ...styles.btnGhost,
+              backgroundColor: showHistory ? "rgba(9, 111, 202, 0.1)" : "transparent"
+            }}
+          >
+            📋 履歴 ({voiceHistory.length})
+          </button>
+          
+          <button 
             onClick={() => {
               setVisibleText(currentText);
               setSelectedGroups(new Set());
@@ -1086,7 +1108,7 @@ const ScribbleTranslator = () => {
             style={styles.btnPurple}
           >
             🗣️ 表示
-            </button>
+          </button>
           <button
             onClick={() => {
               setVisibleText("");
@@ -1553,7 +1575,106 @@ const ScribbleTranslator = () => {
             )}
           </div>
             
-              {/* アクセシビリティ：翻訳更新の読み上げ */}
+              {/* 音声認識履歴モーダル */}
+      {showHistory && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          zIndex: 2000,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+          <div style={{
+            background: "#FFFFFF",
+            borderRadius: "12px",
+            padding: "24px",
+            maxWidth: "600px",
+            maxHeight: "80vh",
+            overflow: "auto",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+          }}>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "20px",
+            }}>
+              <h3 style={{ margin: 0, color: "#374151" }}>🎤 音声認識履歴</h3>
+              <button 
+                onClick={() => setShowHistory(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: "24px",
+                  cursor: "pointer",
+                  color: "#6B7280",
+                }}
+              >
+                ✖
+              </button>
+            </div>
+            
+            {voiceHistory.length === 0 ? (
+              <p style={{ color: "#6B7280", textAlign: "center" }}>まだ音声認識の履歴がありません</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {voiceHistory.map((text, index) => (
+                  <div 
+                    key={index}
+                    style={{
+                      padding: "16px",
+                      backgroundColor: "#F9FAFB",
+                      borderRadius: "8px",
+                      border: "1px solid #E5E7EB",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      setCurrentText(text);
+                      setShowHistory(false);
+                    }}
+                  >
+                    <div style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center",
+                      marginBottom: "8px"
+                    }}>
+                      <span style={{ 
+                        fontSize: "12px", 
+                        color: "#6B7280",
+                        fontWeight: "500"
+                      }}>
+                        #{index + 1}
+                      </span>
+                      <span style={{ 
+                        fontSize: "12px", 
+                        color: "#6B7280"
+                      }}>
+                        {new Date().toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <p style={{ 
+                      margin: 0, 
+                      color: "#374151",
+                      fontSize: "16px",
+                      lineHeight: "1.5"
+                    }}>
+                      {text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* アクセシビリティ：翻訳更新の読み上げ */}
         <div aria-live="polite" aria-atomic="true" style={{position:'absolute', left:-9999, top:'auto'}}>
           {triplet.back} {triplet.trans}
       </div>
