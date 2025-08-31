@@ -925,22 +925,68 @@ const ScribbleTranslator = () => {
             ✍️ 手書き
           </button>
           
-          {/* 文節認識のオンオフボタン */}
-          <button 
-            onClick={() => {
-              setIsBunsetsuMode(m => !m);
-              setSelectedGroups(new Set()); // 選択状態をクリア
-            }} 
-            style={{
-              ...styles.btnGhost,
-              backgroundColor: isBunsetsuMode ? '#10b981' : '#e5e7eb',
+          {/* 文節認識のラジオボタン */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '4px',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '8px',
+            border: '1px solid #d1d5db',
+          }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              backgroundColor: isBunsetsuMode ? '#10b981' : 'transparent',
               color: isBunsetsuMode ? '#fff' : '#374151',
-              border: isBunsetsuMode ? '1px solid #059669' : '1px solid #d1d5db',
-            }}
-            title={isBunsetsuMode ? "文節認識: オン" : "文節認識: オフ"}
-          >
-            {isBunsetsuMode ? "🤖 文節ON" : "🔤 文字ON"}
-          </button>
+              transition: 'all 0.2s ease',
+            }}>
+              <input
+                type="radio"
+                name="bunsetsuMode"
+                checked={isBunsetsuMode}
+                onChange={() => {
+                  setIsBunsetsuMode(true);
+                  setSelectedGroups(new Set());
+                }}
+                style={{ display: 'none' }}
+              />
+              🤖 文節認識
+            </label>
+            
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              backgroundColor: !isBunsetsuMode ? '#6b7280' : 'transparent',
+              color: !isBunsetsuMode ? '#fff' : '#374151',
+              transition: 'all 0.2s ease',
+            }}>
+              <input
+                type="radio"
+                name="bunsetsuMode"
+                checked={!isBunsetsuMode}
+                onChange={() => {
+                  setIsBunsetsuMode(false);
+                  setSelectedGroups(new Set());
+                }}
+                style={{ display: 'none' }}
+              />
+              🔤 文字認識
+            </label>
+          </div>
         </div>
 
         {/* 言語選択と情報表示 */}
