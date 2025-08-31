@@ -1604,7 +1604,7 @@ const ScribbleTranslator = () => {
               alignItems: "center",
               marginBottom: "20px",
             }}>
-              <h3 style={{ margin: 0, color: "#374151" }}>🎤 音声認識履歴</h3>
+              <h3 style={{ margin: 0, color: "#374151" }}>🎤 音声認識履歴（クリックで挿入）</h3>
               <button 
                 onClick={() => setShowHistory(false)}
                 style={{
@@ -1622,19 +1622,35 @@ const ScribbleTranslator = () => {
             {voiceHistory.length === 0 ? (
               <p style={{ color: "#6B7280", textAlign: "center" }}>まだ音声認識の履歴がありません</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <ul style={{ 
+                listStyle: "none", 
+                padding: 0, 
+                margin: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px"
+              }}>
                 {voiceHistory.map((text, index) => (
-                  <div 
+                  <li 
                     key={index}
                     style={{
-                      padding: "16px",
+                      padding: "12px 16px",
                       backgroundColor: "#F9FAFB",
-                      borderRadius: "8px",
+                      borderRadius: "6px",
                       border: "1px solid #E5E7EB",
                       cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = "#F3F4F6";
+                      e.target.style.borderColor = "#D1D5DB";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = "#F9FAFB";
+                      e.target.style.borderColor = "#E5E7EB";
                     }}
                     onClick={() => {
-                      setCurrentText(text);
+                      setCurrentText(prev => prev + text); // 既存テキストに追加
                       setShowHistory(false);
                     }}
                   >
@@ -1642,33 +1658,36 @@ const ScribbleTranslator = () => {
                       display: "flex", 
                       justifyContent: "space-between", 
                       alignItems: "center",
-                      marginBottom: "8px"
+                      marginBottom: "6px"
                     }}>
                       <span style={{ 
-                        fontSize: "12px", 
+                        fontSize: "11px", 
                         color: "#6B7280",
-                        fontWeight: "500"
+                        fontWeight: "600",
+                        backgroundColor: "#E5E7EB",
+                        padding: "2px 6px",
+                        borderRadius: "4px"
                       }}>
                         #{index + 1}
                       </span>
                       <span style={{ 
-                        fontSize: "12px", 
+                        fontSize: "11px", 
                         color: "#6B7280"
                       }}>
                         {new Date().toLocaleTimeString()}
                       </span>
                     </div>
-                    <p style={{ 
-                      margin: 0, 
+                    <div style={{ 
                       color: "#374151",
-                      fontSize: "16px",
-                      lineHeight: "1.5"
+                      fontSize: "15px",
+                      lineHeight: "1.4",
+                      wordBreak: "break-word"
                     }}>
                       {text}
-                    </p>
-                  </div>
+                    </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
         </div>
