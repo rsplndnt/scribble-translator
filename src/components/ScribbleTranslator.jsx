@@ -853,7 +853,6 @@ const ScribbleTranslator = () => {
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>👆しゃべり描き for the future</h1>
-        <p style={styles.subtitle}>原文 → 折り返し → 翻訳（文節なぞり選択／編集対応）</p>
       </div>
 
       <div style={styles.toolbar}>
