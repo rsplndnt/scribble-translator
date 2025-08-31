@@ -534,6 +534,29 @@ const ScribbleTranslator = () => {
     }
   }, [inlineEditMode]);
 
+  /* ------ テキストエリアの高さ自動調整 ------ */
+  const adjustTextareaHeight = (textarea) => {
+    if (!textarea) return;
+    
+    // 高さをリセットして実際の内容の高さを取得
+    textarea.style.height = 'auto';
+    
+    // スクロール高さを取得して適切な高さを設定
+    const scrollHeight = textarea.scrollHeight;
+    const minHeight = window.innerWidth <= 768 ? 120 : 120;
+    const maxHeight = window.innerWidth <= 768 ? 200 : 300;
+    
+    const newHeight = Math.max(minHeight, Math.min(scrollHeight, maxHeight));
+    textarea.style.height = `${newHeight}px`;
+    
+    // スクロールが必要な場合はスクロールバーを表示
+    if (scrollHeight > maxHeight) {
+      textarea.style.overflowY = 'auto';
+    } else {
+      textarea.style.overflowY = 'hidden';
+    }
+  };
+
   /* ------ インライン編集開始 ------ */
   const startInlineEdit = (mode) => {
     if (!selectedGroups.size) return;
@@ -932,12 +955,18 @@ const ScribbleTranslator = () => {
           zIndex: 1000,
           minWidth: window.innerWidth <= 768 ? "90vw" : "450px",
           maxWidth: window.innerWidth <= 768 ? "90vw" : "600px",
+          maxHeight: window.innerWidth <= 768 ? "80vh" : "70vh",
+          overflow: "auto",
         }}>
           {inlineEditMode === 'keyboard' ? (
             <div>
               <textarea
                 value={inlineEditText}
-                onChange={(e) => setInlineEditText(e.target.value)}
+                onChange={(e) => {
+                  setInlineEditText(e.target.value);
+                  // テキストエリアの高さを自動調整
+                  adjustTextareaHeight(e.target);
+                }}
                 onCompositionStart={() => setIsComposing(true)}
                 onCompositionEnd={() => setIsComposing(false)}
                 onKeyDown={(e) => {
@@ -966,7 +995,9 @@ const ScribbleTranslator = () => {
                 }}
                 style={{
                   width: window.innerWidth <= 768 ? "100%" : "400px",
-                  height: window.innerWidth <= 768 ? "120px" : "120px",
+                  height: "auto",
+                  minHeight: window.innerWidth <= 768 ? "120px" : "120px",
+                  maxHeight: window.innerWidth <= 768 ? "200px" : "300px",
                   padding: "12px",
                   border: "1px solid #ddd",
                   borderRadius: "6px",
@@ -974,10 +1005,20 @@ const ScribbleTranslator = () => {
                   lineHeight: "1.5",
                   resize: window.innerWidth <= 768 ? "none" : "both",
                   fontFamily: "inherit",
-                  minHeight: window.innerWidth <= 768 ? "120px" : "120px",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                  overflow: "hidden",
+                  boxSizing: "border-box",
                 }}
                 placeholder="テキストを入力してください..."
                 autoFocus
+                ref={(textarea) => {
+                  if (textarea) {
+                    // 初期表示時に高さ調整を適用
+                    setTimeout(() => adjustTextareaHeight(textarea), 100);
+                  }
+                }}
               />
               <div style={{ 
                 display: "flex", 
