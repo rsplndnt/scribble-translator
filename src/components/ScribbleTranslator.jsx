@@ -956,19 +956,6 @@ const ScribbleTranslator = () => {
             <option value="zh">🇨🇳 中国語</option>
           </select>
           
-          {/* 文節認識の状態表示 */}
-          <span style={{
-            padding: "6px 12px",
-            borderRadius: "6px",
-            fontSize: "14px",
-            fontWeight: "600",
-            backgroundColor: isBunsetsuMode ? '#d1fae5' : '#fef3c7',
-            color: isBunsetsuMode ? '#065f46' : '#92400e',
-            border: `1px solid ${isBunsetsuMode ? '#a7f3d0' : '#fde68a'}`,
-          }}>
-            {isBunsetsuMode ? "🤖 文節認識" : "🔤 文字認識"}
-          </span>
-          
           {isListening ? (
             <span style={styles.listeningIndicator}>🎤 音声入力中…</span>
           ) : (
