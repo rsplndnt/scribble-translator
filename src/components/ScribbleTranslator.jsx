@@ -1231,9 +1231,9 @@ const ScribbleTranslator = () => {
                       dominantBaseline="middle"
                       fontSize={c.charSize}
                       fontWeight="800"
-                      fill="#ff0000"
+                      fill="#374151"
                       stroke="#FFFFFF"
-                      strokeWidth="3"
+                      strokeWidth="2"
                       paintOrder="stroke fill"
                       letterSpacing="0.5px"
                     >
@@ -1324,7 +1324,7 @@ const ScribbleTranslator = () => {
                   dominantBaseline="middle"
                   fontSize="clamp(16px, 4vw, 20px)"
                   fontWeight="800"
-                  fill="#ff0000"
+                  fill="#374151"
                   stroke="#FFFFFF"
                   strokeWidth="clamp(1px, 0.2vw, 2px)"
                   paintOrder="stroke fill"
@@ -1350,9 +1350,9 @@ const ScribbleTranslator = () => {
                   dominantBaseline="middle"
                   fontSize="clamp(24px, 8vw, 42px)"
                   fontWeight="800"
-                  fill="#ff0000"
+                  fill="#374151"
                   stroke="#FFFFFF"
-                  strokeWidth="clamp(2px, 0.4vw, 3px)"
+                  strokeWidth="clamp(1px, 0.2vw, 2px)"
                   paintOrder="stroke fill"
                   letterSpacing="0.5px"
                   style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
