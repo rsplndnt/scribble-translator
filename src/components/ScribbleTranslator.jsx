@@ -773,8 +773,17 @@ const ScribbleTranslator = () => {
       return p ? { x: p.x, y: p.y } : null;
     }).filter(Boolean);
     if (!pts.length) return;
-    const x = Math.max(...pts.map((p) => p.x)) + 10;
-    const y = Math.max(...pts.map((p) => p.y)) + 35; // ボタンの当たり判定に合わせて調整
+    // 画面境界を考慮したボタン配置
+    const baseX = Math.max(...pts.map((p) => p.x)) + 10;
+    const baseY = Math.max(...pts.map((p) => p.y)) + 35;
+    
+    // モバイル対応：画面端からはみ出さないよう調整
+    const buttonWidth = window.innerWidth <= 768 ? 120 : 200; // ボタン群の幅
+    const buttonHeight = window.innerWidth <= 768 ? 180 : 60; // ボタン群の高さ
+    
+    const x = Math.max(10, Math.min(baseX, window.innerWidth - buttonWidth - 10));
+    const y = Math.max(10, Math.min(baseY, window.innerHeight - buttonHeight - 10));
+    
     setFloatPos({ x, y });
   }, [selectedGroups, bunsetsuGroups, tilePositions]);
 
@@ -1295,10 +1304,10 @@ const ScribbleTranslator = () => {
                       transform: "translate(-50%,-50%)",
                       cursor: selectedGroups.size > 0 ? "pointer" : "crosshair", // 選択状態でのみクリック可能
                       zIndex: 10, // オーバーレイより下だが見える位置
-                      backgroundColor: selected ? "rgba(9, 111, 202, 0.2)" : "transparent",
-                      borderRadius: selected ? "4px" : "0px",
-                      padding: selected ? "2px 4px" : "0px",
-                      borderBottom: selected ? "3px solid #096FCA" : "none",
+                      backgroundColor: "transparent", // Goodpatch: クリーンな背景
+                      border: selected ? "2px solid #096FCA" : "2px solid transparent", // Goodpatch: ボーダー選択
+                      borderRadius: "6px", // Goodpatch: 統一された角丸
+                      padding: "4px 6px", // 統一されたパディング
                     }}
                     width={c.charSize * 1.2}
                     height={c.charSize * 1.2}
@@ -1370,15 +1379,11 @@ const ScribbleTranslator = () => {
                   top: floatPos.y, 
                   display: "flex", 
                   flexDirection: window.innerWidth <= 768 ? "column" : "row",
-                  gap: 8,
+                  gap: window.innerWidth <= 768 ? 6 : 8,
                   zIndex: 1000,
                   pointerEvents: "auto",
-                  "@media (max-width: 768px)": {
-                    flexDirection: "column",
-                    gap: 6,
-                    left: Math.max(10, Math.min(floatPos.x, window.innerWidth - 200)),
-                    top: Math.max(10, Math.min(floatPos.y, window.innerHeight - 200)),
-                  },
+                  // Goodpatch風の軽いシャドウ
+                  filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.1))",
                 }}>
                                     <button onClick={handleDelete} style={styles.btnDangerSm}>🗑 削除</button>
                   <button onClick={() => startInlineEdit('keyboard')} style={styles.btnPrimarySm}>⌨️ キーボード修正</button>
@@ -1696,10 +1701,10 @@ const styles = {
     },
   },
   card: {
-    background: "#DDDDDD",
-    border: "1px solid #e5e7eb",
-    borderRadius: 14,
-    boxShadow: "0 10px 26px rgba(0,0,0,.06)",
+    background: "#FFFFFF", // Goodpatch: 白いカード背景で階層を明確化
+    border: "1px solid #e5e7eb", // Goodpatch: 薄いボーダー
+    borderRadius: 12, // Goodpatch: 統一された角丸
+    boxShadow: "0 1px 3px rgba(0,0,0,0.1)", // Goodpatch: シンプルなシャドウ
     padding: 24,
     "@media (max-width: 768px)": {
       padding: 16,
@@ -1730,10 +1735,10 @@ const styles = {
   },
   modalCard: {
     width: "min(980px, 94vw)",
-    background: "#DDDDDD",
-    borderRadius: 16,
-    boxShadow: "0 22px 60px rgba(0,0,0,.30)",
-    padding: 20,
+    background: "#FFFFFF", // Goodpatch: 白いカード背景
+    borderRadius: 12, // Goodpatch: 統一された角丸
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)", // Goodpatch: シンプルなシャドウ
+    padding: 24, // Goodpatch: 統一されたパディング
   },
   inkCanvas: {
     background: "#DDDDDD",
