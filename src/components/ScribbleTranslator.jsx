@@ -1192,12 +1192,17 @@ const ScribbleTranslator = () => {
                   <svg
                     key={c.id}
                     onClick={() => toggleGroupByIndex(c.index)}
+                    onPointerDown={(e) => {
+                      e.stopPropagation(); // オーバーレイへの伝播を防ぐ
+                      toggleGroupByIndex(c.index);
+                    }}
                 style={{
                       position: "absolute",
                       left: `${c.x}px`,
                       top: `${c.y}px`,
                       transform: "translate(-50%,-50%)",
                       cursor: "pointer",
+                      zIndex: 10, // オーバーレイより上に配置
                       backgroundColor: selected ? "rgba(9, 111, 202, 0.2)" : "transparent",
                       borderRadius: selected ? "4px" : "0px",
                       padding: selected ? "2px 4px" : "0px",
@@ -1229,7 +1234,10 @@ const ScribbleTranslator = () => {
               {/* なぞりオーバーレイ */}
           <div
             ref={overlayRef}
-            style={styles.overlay}
+            style={{
+              ...styles.overlay,
+              zIndex: 1, // 文字より下に配置
+            }}
               onPointerDown={startDrawPointer}
               onPointerMove={moveDrawPointer}
               onPointerUp={stopDrawPointer}
