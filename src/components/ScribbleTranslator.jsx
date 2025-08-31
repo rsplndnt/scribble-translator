@@ -1925,33 +1925,57 @@ const styles = {
     padding: "20px 28px",
     boxShadow: "0 6px 22px rgba(9,111,202,.28)",
     "@media (max-width: 768px)": {
-      padding: "16px 20px",
+      padding: "14px 18px",
     },
     "@media (max-width: 430px)": {
-      padding: "14px 16px", // iPhone 15 (430px) 対応
+      padding: "12px 14px", // iPhone 15 (430px) 対応
+    },
+    "@media (max-width: 414px)": {
+      padding: "11px 13px", // iPhone Plus シリーズ (414px) 対応
     },
     "@media (max-width: 390px)": {
-      padding: "12px 14px", // iPhone 14/13 (390px) 対応
+      padding: "10px 12px", // iPhone 14/13 (390px) 対応
     },
     "@media (max-width: 375px)": {
-      padding: "10px 12px", // iPhone SE (375px) 対応
+      padding: "9px 11px", // iPhone SE (375px) 対応
+    },
+    "@media (max-width: 360px)": {
+      padding: "8px 10px", // 小さいAndroid (360px) 対応
+    },
+    "@media (max-width: 320px)": {
+      padding: "7px 9px", // 最小サイズ (320px) 対応
     },
   },
   title: { 
     margin: 0, 
     fontSize: "28px", 
     fontWeight: 800,
+    lineHeight: "1.2", // 行間を狭くして確実に収まるように
+    wordBreak: "keep-all", // 日本語の単語を分割しない
+    whiteSpace: "nowrap", // 改行を防ぐ
     "@media (max-width: 768px)": {
-      fontSize: "22px",
+      fontSize: "20px",
     },
     "@media (max-width: 430px)": {
-      fontSize: "20px", // iPhone 15 (430px) 対応
+      fontSize: "18px", // iPhone 15 (430px) 対応
+    },
+    "@media (max-width: 414px)": {
+      fontSize: "17px", // iPhone Plus シリーズ (414px) 対応
     },
     "@media (max-width: 390px)": {
-      fontSize: "18px", // iPhone 14/13 (390px) 対応
+      fontSize: "16px", // iPhone 14/13 (390px) 対応
     },
     "@media (max-width: 375px)": {
-      fontSize: "16px", // iPhone SE (375px) 対応
+      fontSize: "15px", // iPhone SE (375px) 対応
+    },
+    "@media (max-width: 360px)": {
+      fontSize: "14px", // 小さいAndroid (360px) 対応
+    },
+    "@media (max-width: 320px)": {
+      fontSize: "12px", // 最小サイズ (320px) 対応
+    },
+    "@media (max-width: 280px)": {
+      fontSize: "11px", // 極小サイズ (280px) 対応
     },
   },
   subtitle: { 
