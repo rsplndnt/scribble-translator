@@ -1121,21 +1121,23 @@ const ScribbleTranslator = () => {
 
                         {/* 2) 折り返し（日本語） */}
                   <div style={{
-              fontSize: 20, 
               marginBottom: 14, 
               opacity: 0.95,
               fontWeight: 800,
-              letterSpacing: "0.5px"
+              letterSpacing: "0.5px",
+              textAlign: "center"
             }}>
-              <svg width="100%" height="30" viewBox="0 0 800 30">
+              <svg width="100%" height="30" preserveAspectRatio="xMidYMid meet">
                 <text
-                  x="0"
+                  x="50%"
                   y="20"
-                  fontSize="20"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize="clamp(16px, 4vw, 20px)"
                   fontWeight="800"
                   fill="#ff0000"
                   stroke="#FFFFFF"
-                  strokeWidth="2"
+                  strokeWidth="clamp(1px, 0.2vw, 2px)"
                   paintOrder="stroke fill"
                   letterSpacing="0.5px"
                 >
@@ -1146,19 +1148,21 @@ const ScribbleTranslator = () => {
             
                         {/* 3) 翻訳（選択言語） */}
                       <div style={{
-              fontSize: 42,
               fontWeight: 800,
-              letterSpacing: "0.5px"
+              letterSpacing: "0.5px",
+              textAlign: "center"
             }}>
-              <svg width="100%" height="60" viewBox="0 0 800 60">
+              <svg width="100%" height="60" preserveAspectRatio="xMidYMid meet">
                 <text
-                  x="0"
+                  x="50%"
                   y="40"
-                  fontSize="42"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize="clamp(24px, 8vw, 42px)"
                   fontWeight="800"
                   fill="#ff0000"
                   stroke="#FFFFFF"
-                  strokeWidth="3"
+                  strokeWidth="clamp(2px, 0.4vw, 3px)"
                   paintOrder="stroke fill"
                   letterSpacing="0.5px"
                 >
