@@ -410,163 +410,57 @@ const ScribbleTranslator = () => {
 
   /* ------ 線の折り返し検出 ------ */
   const hasSignificantDirectionChanges = (path) => {
-    console.log('=== ぐしゃぐしゃ度検出開始 ===');
+    console.log('=== 曲率ベース判定開始 ===');
     console.log('パス長:', path.length);
     
-    if (path.length < 5) {
-      console.log('パスが短すぎる（5点未満）');
+    if (path.length < 3) {
+      console.log('パスが短すぎる（3点未満）');
       return false;
     }
     
-    // より厳密な判定条件
-    const minAngle = 25; // 25度以上の角度変化を折り返しとみなす（厳格化）
-    const minDistance = 8; // 最小距離を増加（ノイズ除去）
-    const minDirectionChanges = 2; // 最低2回の方向変化が必要
-    const maxStraightness = 0.15; // 直線性の最大許容値（15%以下）
-    
-    console.log('検出条件:', { minAngle, minDistance, minDirectionChanges, maxStraightness });
-    
-    // 1. 直線性チェック：始点と終点を結ぶ直線からの平均距離
+    // 始点と終点
     const startPoint = path[0];
     const endPoint = path[path.length - 1];
-    const totalDistance = Math.hypot(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
     
-    console.log('直線性チェック:', { startPoint, endPoint, totalDistance: totalDistance.toFixed(2) });
+    // 始点終点間の直線距離
+    const straightDistance = Math.hypot(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
     
-    if (totalDistance > 0) {
-      let totalDeviation = 0;
-      let maxDeviation = 0;
-      
-      for (let i = 1; i < path.length - 1; i++) {
-        const point = path[i];
-        // 点から直線までの距離を計算
-        const t = ((point.x - startPoint.x) * (endPoint.x - startPoint.x) + 
-                   (point.y - startPoint.y) * (endPoint.y - startPoint.y)) / (totalDistance * totalDistance);
-        const projectionX = startPoint.x + t * (endPoint.x - startPoint.x);
-        const projectionY = startPoint.y + t * (endPoint.y - startPoint.y);
-        const deviation = Math.hypot(point.x - projectionX, point.y - projectionY);
-        totalDeviation += deviation;
-        maxDeviation = Math.max(maxDeviation, deviation);
-      }
-      
-      const avgDeviation = totalDeviation / (path.length - 2);
-      const straightnessRatio = avgDeviation / totalDistance;
-      
-      console.log('偏差分析:', { 
-        avgDeviation: avgDeviation.toFixed(2), 
-        maxDeviation: maxDeviation.toFixed(2),
-        straightnessRatio: straightnessRatio.toFixed(3)
-      });
-      
-      // 直線性が高すぎる場合は除外
-      if (straightnessRatio < maxStraightness) {
-        console.log(`直線性が高すぎる (${straightnessRatio.toFixed(3)} < ${maxStraightness})`);
-        return false;
-      }
+    console.log('始点:', startPoint);
+    console.log('終点:', endPoint);
+    console.log('直線距離:', straightDistance.toFixed(2));
+    
+    // 直線距離が短すぎる場合は除外
+    if (straightDistance < 20) {
+      console.log('直線距離が短すぎる（20px未満）');
+      return false;
     }
     
-    // 2. 角度変化の検出
-    console.log('角度変化の検出開始...');
-    let directionChanges = 0;
-    let totalAngleChange = 0;
-    let sharpTurns = 0; // 急激な方向転換
-    
-    for (let i = 1; i < path.length - 1; i++) {
+    // ストローク長を計算
+    let strokeLength = 0;
+    for (let i = 1; i < path.length; i++) {
       const prev = path[i - 1];
       const current = path[i];
-      const next = path[i + 1];
-      
-      // 前のベクトル
-      const v1 = {
-        x: current.x - prev.x,
-        y: current.y - prev.y
-      };
-      
-      // 次のベクトル
-      const v2 = {
-        x: next.x - current.x,
-        y: next.y - current.y
-      };
-      
-      // ベクトルの長さをチェック
-      const len1 = Math.hypot(v1.x, v1.y);
-      const len2 = Math.hypot(v2.x, v2.y);
-      
-      if (len1 < minDistance || len2 < minDistance) {
-        console.log(`点${i}: 距離が短すぎる (${len1.toFixed(2)}, ${len2.toFixed(2)})`);
-        continue;
-      }
-      
-      // 角度を計算
-      const dot = v1.x * v2.x + v1.y * v2.y;
-      const cosAngle = dot / (len1 * len2);
-      const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle))) * (180 / Math.PI);
-      
-      totalAngleChange += angle;
-      
-      console.log(`点${i}: 角度=${angle.toFixed(1)}度, 距離=(${len1.toFixed(2)}, ${len2.toFixed(2)})`);
-      
-      // 角度変化が大きい場合
-      if (angle > minAngle) {
-        directionChanges++;
-        console.log(`点${i}: 折り返し検出！ (${angle.toFixed(1)}度 > ${minAngle}度)`);
-        
-        // 急激な方向転換（90度以上）を特別にカウント
-        if (angle > 90) {
-          sharpTurns++;
-          console.log(`点${i}: 急激な方向転換！ (${angle.toFixed(1)}度)`);
-        }
-      }
+      const segmentLength = Math.hypot(current.x - prev.x, current.y - prev.y);
+      strokeLength += segmentLength;
     }
     
-    // 3. 自己交差チェック
-    let selfIntersections = 0;
-    for (let i = 0; i < path.length - 2; i++) {
-      for (let j = i + 2; j < path.length - 1; j++) {
-        if (doLinesIntersect(path[i], path[i + 1], path[j], path[j + 1])) {
-          selfIntersections++;
-          console.log(`自己交差検出: 線分${i}-${i+1} と 線分${j}-${j+1}`);
-        }
-      }
-    }
+    console.log('ストローク長:', strokeLength.toFixed(2));
     
-    console.log('検出結果:', { 
-      directionChanges, 
-      totalAngleChange: totalAngleChange.toFixed(1),
-      sharpTurns,
-      selfIntersections
-    });
+    // 曲率比を計算（ストローク長 ÷ 直線距離）
+    const curvatureRatio = strokeLength / straightDistance;
     
-    // 4. 総合判定
-    const hasEnoughChanges = directionChanges >= minDirectionChanges;
-    const hasSharpTurns = sharpTurns >= 1;
-    const hasSelfIntersections = selfIntersections >= 1;
-    const hasGoodAngleChange = totalAngleChange > 100; // 総角度変化が100度以上
+    console.log('曲率比:', curvatureRatio.toFixed(3));
     
-    const result = hasEnoughChanges && (hasSharpTurns || hasSelfIntersections || hasGoodAngleChange);
+    // 曲率比が2.0以上の場合をぐしゃぐしゃ線として判定
+    const scribbleThreshold = 2.0;
+    const isScribble = curvatureRatio >= scribbleThreshold;
     
-    console.log(`総合判定: ${result}`);
-    console.log(`- 方向変化: ${hasEnoughChanges} (${directionChanges} >= ${minDirectionChanges})`);
-    console.log(`- 急激な方向転換: ${hasSharpTurns} (${sharpTurns} >= 1)`);
-    console.log(`- 自己交差: ${hasSelfIntersections} (${selfIntersections} >= 1)`);
-    console.log(`- 総角度変化: ${hasGoodAngleChange} (${totalAngleChange.toFixed(1)} > 100)`);
-    console.log('=== ぐしゃぐしゃ度検出終了 ===');
+    console.log(`判定結果: ${isScribble} (${curvatureRatio.toFixed(3)} >= ${scribbleThreshold})`);
+    console.log('=== 曲率ベース判定終了 ===');
     
-    return result;
+    return isScribble;
   };
-  
-  // 線分交差判定のヘルパー関数
-  const doLinesIntersect = (p1, p2, p3, p4) => {
-    const det = (a, b, c, d) => a * d - b * c;
-    const delta = det(p2.x - p1.x, p3.x - p4.x, p2.y - p1.y, p3.y - p4.y);
-    
-    if (Math.abs(delta) < 1e-10) return false; // 平行線
-    
-    const t = det(p3.x - p1.x, p3.x - p4.x, p3.y - p1.y, p3.y - p4.y) / delta;
-    const u = det(p2.x - p1.x, p3.x - p1.x, p2.y - p1.y, p3.y - p1.y) / delta;
-    
-    return t >= 0 && t <= 1 && u >= 0 && u <= 1;
-  };
+
 
   /* ------ パス補間（ぐしゃぐしゃ線を滑らかに） ------ */
   const interpolatePath = (path) => {
