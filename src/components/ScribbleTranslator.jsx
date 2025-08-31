@@ -58,6 +58,10 @@ const ScribbleTranslator = () => {
   const [inlineEditText, setInlineEditText] = useState('');
   const [inlineEditPosition, setInlineEditPosition] = useState(null);
   
+  // 日本語入力の変換確定状態
+  const [isComposing, setIsComposing] = useState(false); // IME変換中かどうか
+  const [enterPressCount, setEnterPressCount] = useState(0); // エンターキー押下回数
+  
   // 手書き用
   const inkCanvasRef = useRef(null);
   const [isInkDrawing, setIsInkDrawing] = useState(false);
@@ -474,6 +478,10 @@ const ScribbleTranslator = () => {
     setInlineEditText(text);
     setInlineEditMode(mode);
     setInlineEditPosition(floatPos);
+    
+    // 日本語入力状態をリセット
+    setIsComposing(false);
+    setEnterPressCount(0);
   };
 
   /* ------ インライン編集完了 ------ */
@@ -786,6 +794,10 @@ const ScribbleTranslator = () => {
               const centerY = window.innerHeight / 2 - 100;
               console.log('編集ウィンドウ位置:', { x: centerX, y: centerY });
               setInlineEditPosition({ x: centerX, y: centerY });
+              
+              // 日本語入力状態をリセット
+              setIsComposing(false);
+              setEnterPressCount(0);
             }} 
             style={styles.btnGhost}
           >
@@ -801,6 +813,10 @@ const ScribbleTranslator = () => {
               const centerY = window.innerHeight / 2 - 100;
               console.log('編集ウィンドウ位置:', { x: centerX, y: centerY });
               setInlineEditPosition({ x: centerX, y: centerY });
+              
+              // 日本語入力状態をリセット
+              setIsComposing(false);
+              setEnterPressCount(0);
             }} 
             style={styles.btnGhost}
           >
@@ -841,9 +857,30 @@ const ScribbleTranslator = () => {
                 type="text"
                 value={inlineEditText}
                 onChange={(e) => setInlineEditText(e.target.value)}
+                onCompositionStart={() => setIsComposing(true)}
+                onCompositionEnd={() => setIsComposing(false)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') finishInlineEdit();
-                  if (e.key === 'Escape') cancelInlineEdit();
+                  if (e.key === 'Enter') {
+                    if (isComposing) {
+                      // IME変換中は変換確定
+                      setEnterPressCount(prev => prev + 1);
+                      console.log('変換確定 - エンター回数:', enterPressCount + 1);
+                    } else {
+                      // IME変換完了後は確定
+                      if (enterPressCount > 0) {
+                        console.log('確定処理実行');
+                        finishInlineEdit();
+                        setEnterPressCount(0);
+                      } else {
+                        console.log('変換確定待ち');
+                        setEnterPressCount(1);
+                      }
+                    }
+                  }
+                  if (e.key === 'Escape') {
+                    cancelInlineEdit();
+                    setEnterPressCount(0);
+                  }
                 }}
                 style={{
                   width: "100%",
