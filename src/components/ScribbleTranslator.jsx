@@ -496,6 +496,7 @@ const ScribbleTranslator = () => {
 
   /* ------ タップで文節/文字トグル ------ */
   const toggleGroupByIndex = (charIndex) => {
+    console.log('🔥 toggleGroupByIndex called:', charIndex, 'isBunsetsuMode:', isBunsetsuMode, 'bunsetsuGroups:', bunsetsuGroups.length);
     setMode("selecting");
     
     // 文節モードの場合は文節単位、そうでない場合は文字単位で選択
@@ -510,9 +511,18 @@ const ScribbleTranslator = () => {
       });
     } else {
       // 文字モード：1文字ずつ選択/解除
+      console.log('🔥 文字モード - charIndex:', charIndex, 'current selectedGroups:', selectedGroups);
       setSelectedGroups((prev) => {
         const s = new Set(prev);
-        s.has(charIndex) ? s.delete(charIndex) : s.add(charIndex);
+        const wasSelected = s.has(charIndex);
+        if (wasSelected) {
+          s.delete(charIndex);
+          console.log('🔥 文字を選択解除:', charIndex);
+        } else {
+          s.add(charIndex);
+          console.log('🔥 文字を選択:', charIndex);
+        }
+        console.log('🔥 新しい selectedGroups:', s);
         return s;
       });
     }
@@ -588,7 +598,7 @@ const ScribbleTranslator = () => {
         setCurrentText(inlineEditText.trim());
         setVisibleText(inlineEditText.trim());
         setMode("shown");
-      } else {
+    } else {
         // 既存のテキストがある場合は置換
         applyReplace(inlineEditText);
       }
@@ -1292,7 +1302,7 @@ const ScribbleTranslator = () => {
                   <button onClick={() => startInlineEdit('ink')} style={styles.btnPrimarySm}>✍️ 手書き修正</button>
                   <button onClick={() => setSelectedGroups(new Set())} style={styles.btnGhostSm}>
                     ✖ キャンセル
-                  </button>
+              </button>
                 </div>
               )}
 
