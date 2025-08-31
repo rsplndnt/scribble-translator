@@ -789,8 +789,8 @@ const ScribbleTranslator = () => {
               console.log('キーボード入力ボタンがクリックされました');
               setInlineEditMode('keyboard');
               setInlineEditText('');
-              // 画面中央付近に配置
-              const centerX = window.innerWidth / 2 - 100;
+              // 画面中央付近に配置（テキストボックスサイズを考慮）
+              const centerX = window.innerWidth / 2 - 225; // 450px / 2
               const centerY = window.innerHeight / 2 - 100;
               console.log('編集ウィンドウ位置:', { x: centerX, y: centerY });
               setInlineEditPosition({ x: centerX, y: centerY });
@@ -808,8 +808,8 @@ const ScribbleTranslator = () => {
               console.log('手書き入力ボタンがクリックされました');
               setInlineEditMode('ink');
               setInlineEditText('');
-              // 画面中央付近に配置
-              const centerX = window.innerWidth / 2 - 100;
+              // 画面中央付近に配置（手書きキャンバスサイズを考慮）
+              const centerX = window.innerWidth / 2 - 150; // 300px / 2
               const centerY = window.innerHeight / 2 - 100;
               console.log('編集ウィンドウ位置:', { x: centerX, y: centerY });
               setInlineEditPosition({ x: centerX, y: centerY });
@@ -846,21 +846,21 @@ const ScribbleTranslator = () => {
           background: "#fff",
           border: "2px solid #096FCA",
           borderRadius: "8px",
-          padding: "12px",
+          padding: "16px",
           boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
           zIndex: 1000,
-          minWidth: "200px"
+          minWidth: "450px"
         }}>
           {inlineEditMode === 'keyboard' ? (
             <div>
-              <input
-                type="text"
+              <textarea
                 value={inlineEditText}
                 onChange={(e) => setInlineEditText(e.target.value)}
                 onCompositionStart={() => setIsComposing(true)}
                 onCompositionEnd={() => setIsComposing(false)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault(); // 改行を防ぐ
                     if (isComposing) {
                       // IME変換中は変換確定
                       setEnterPressCount(prev => prev + 1);
@@ -883,15 +883,20 @@ const ScribbleTranslator = () => {
                   }
                 }}
                 style={{
-                  width: "100%",
-                  padding: "8px",
+                  width: "400px",
+                  height: "120px",
+                  padding: "12px",
                   border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  fontSize: "16px"
+                  borderRadius: "6px",
+                  fontSize: "16px",
+                  lineHeight: "1.5",
+                  resize: "both",
+                  fontFamily: "inherit"
                 }}
+                placeholder="テキストを入力してください..."
                 autoFocus
               />
-              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                 <button onClick={finishInlineEdit} style={styles.btnPrimarySm}>✓ 保存</button>
                 <button onClick={cancelInlineEdit} style={styles.btnGhostSm}>✖ キャンセル</button>
               </div>
