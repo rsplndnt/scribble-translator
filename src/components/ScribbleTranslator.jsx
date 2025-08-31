@@ -291,7 +291,7 @@ const ScribbleTranslator = () => {
     console.log('描画パス:', drawPath);
     
     // デバッグ用：一時的に折り返し検出を無効化
-    const debugMode = true; // デバッグモード（trueで折り返し検出を無効化）
+    const debugMode = false; // デバッグモード（falseで折り返し検出を有効化）
     
     if (!debugMode && !hasChanges) {
       console.log('直線的すぎる線のため、選択をキャンセル');
@@ -356,11 +356,37 @@ const ScribbleTranslator = () => {
 
   /* ------ 線の折り返し検出 ------ */
   const hasSignificantDirectionChanges = (path) => {
-    if (path.length < 3) return false; // 最低3点必要（緩和）
+    if (path.length < 4) return false; // 最低4点必要（厳格化）
     
     let directionChanges = 0;
-    const minAngle = 20; // 20度以上の角度変化を折り返しとみなす（緩和）
-    const minDistance = 8; // 最小距離を小さく（緩和）
+    const minAngle = 25; // 25度以上の角度変化を折り返しとみなす（厳格化）
+    const minDistance = 12; // 最小距離を大きく（厳格化）
+    
+    // 直線性チェック：始点と終点を結ぶ直線からの平均距離
+    const startPoint = path[0];
+    const endPoint = path[path.length - 1];
+    const totalDistance = Math.hypot(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+    
+    if (totalDistance > 0) {
+      let totalDeviation = 0;
+      for (let i = 1; i < path.length - 1; i++) {
+        const point = path[i];
+        // 点から直線までの距離を計算
+        const t = ((point.x - startPoint.x) * (endPoint.x - startPoint.x) + 
+                   (point.y - startPoint.y) * (endPoint.y - startPoint.y)) / (totalDistance * totalDistance);
+        const projectionX = startPoint.x + t * (endPoint.x - startPoint.x);
+        const projectionY = startPoint.y + t * (endPoint.y - startPoint.y);
+        const deviation = Math.hypot(point.x - projectionX, point.y - projectionY);
+        totalDeviation += deviation;
+      }
+      const avgDeviation = totalDeviation / (path.length - 2);
+      
+      // 平均偏差が小さすぎる場合は直線とみなす
+      if (avgDeviation < 8) {
+        console.log('直線性が高すぎるため、選択をキャンセル');
+        return false;
+      }
+    }
     
     for (let i = 1; i < path.length - 1; i++) {
       const prev = path[i - 1];
@@ -396,8 +422,8 @@ const ScribbleTranslator = () => {
       }
     }
     
-    // 折り返しが1回以上ある場合を有効とする（緩和）
-    return directionChanges >= 1;
+    // 折り返しが2回以上ある場合を有効とする（厳格化）
+    return directionChanges >= 2;
   };
 
   /* ------ パス補間（ぐしゃぐしゃ線を滑らかに） ------ */
