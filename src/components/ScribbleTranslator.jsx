@@ -1927,13 +1927,31 @@ const styles = {
     "@media (max-width: 768px)": {
       padding: "16px 20px",
     },
+    "@media (max-width: 430px)": {
+      padding: "14px 16px", // iPhone 15 (430px) 対応
+    },
+    "@media (max-width: 390px)": {
+      padding: "12px 14px", // iPhone 14/13 (390px) 対応
+    },
+    "@media (max-width: 375px)": {
+      padding: "10px 12px", // iPhone SE (375px) 対応
+    },
   },
   title: { 
     margin: 0, 
-    fontSize: 28, 
+    fontSize: "28px", 
     fontWeight: 800,
     "@media (max-width: 768px)": {
-      fontSize: 24,
+      fontSize: "22px",
+    },
+    "@media (max-width: 430px)": {
+      fontSize: "20px", // iPhone 15 (430px) 対応
+    },
+    "@media (max-width: 390px)": {
+      fontSize: "18px", // iPhone 14/13 (390px) 対応
+    },
+    "@media (max-width: 375px)": {
+      fontSize: "16px", // iPhone SE (375px) 対応
     },
   },
   subtitle: { 
