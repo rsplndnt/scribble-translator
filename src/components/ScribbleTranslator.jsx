@@ -300,6 +300,16 @@ const ScribbleTranslator = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
 
+    // 線の折り返しをチェック - 直線的すぎる場合は選択しない
+    const hasChanges = hasSignificantDirectionChanges(drawPath);
+    console.log('線の折り返し検出:', hasChanges, 'パス長:', drawPath.length);
+    
+    if (!hasChanges) {
+      console.log('直線的すぎる線のため、選択をキャンセル');
+      setDrawPath([]);
+      return;
+    }
+
     // ぐしゃぐしゃ線の軌跡に基づく文字選択
     const touchedIndex = new Set();
     const pad = 8; // 当たり余白（少し小さく）
@@ -350,6 +360,53 @@ const ScribbleTranslator = () => {
       }
     }
     setDrawPath([]);
+  };
+
+  /* ------ 線の折り返し検出 ------ */
+  const hasSignificantDirectionChanges = (path) => {
+    if (path.length < 4) return false; // 最低4点必要
+    
+    let directionChanges = 0;
+    const minAngle = 30; // 30度以上の角度変化を折り返しとみなす
+    const minDistance = 15; // 最小距離（ノイズ除去）
+    
+    for (let i = 2; i < path.length - 1; i++) {
+      const prev = path[i - 2];
+      const current = path[i - 1];
+      const next = path[i];
+      const nextNext = path[i + 1];
+      
+      // 前のベクトル
+      const v1 = {
+        x: current.x - prev.x,
+        y: current.y - prev.y
+      };
+      
+      // 次のベクトル
+      const v2 = {
+        x: next.x - current.x,
+        y: next.y - current.y
+      };
+      
+      // ベクトルの長さをチェック
+      const len1 = Math.hypot(v1.x, v1.y);
+      const len2 = Math.hypot(v2.x, v2.y);
+      
+      if (len1 < minDistance || len2 < minDistance) continue;
+      
+      // 角度を計算
+      const dot = v1.x * v2.x + v1.y * v2.y;
+      const cosAngle = dot / (len1 * len2);
+      const angle = Math.acos(Math.max(-1, Math.min(1, cosAngle))) * (180 / Math.PI);
+      
+      // 角度変化が大きい場合
+      if (angle > minAngle) {
+        directionChanges++;
+      }
+    }
+    
+    // 折り返しが2回以上ある場合を有効とする
+    return directionChanges >= 2;
   };
 
   /* ------ パス補間（ぐしゃぐしゃ線を滑らかに） ------ */
@@ -771,30 +828,30 @@ const ScribbleTranslator = () => {
             onPointerMove={moveDrawPointer}
             onPointerUp={stopDrawPointer}
           >
-            {isDrawing && drawPath.length > 1 && (
-              <svg style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-                <path
-                  d={`M ${drawPath.map((p) => `${p.x},${p.y}`).join(" L ")}`}
-                  stroke="#096FCA"
-                  strokeWidth={4}
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  opacity={0.9}
-                  filter="url(#scribble)"
-                />
-                <defs>
-                  <filter id="scribble">
-                    <feGaussianBlur stdDeviation="1" />
-                    <feOffset dx="0" dy="0" />
-                    <feMerge>
-                      <feMergeNode />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-              </svg>
-            )}
+                            {isDrawing && drawPath.length > 1 && (
+                  <svg style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+                    <path
+                      d={`M ${drawPath.map((p) => `${p.x},${p.y}`).join(" L ")}`}
+                      stroke={hasSignificantDirectionChanges(drawPath) ? "#096FCA" : "#FF6B6B"}
+                      strokeWidth={4}
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity={0.9}
+                      filter="url(#scribble)"
+                    />
+                    <defs>
+                      <filter id="scribble">
+                        <feGaussianBlur stdDeviation="1" />
+                        <feOffset dx="0" dy="0" />
+                        <feMerge>
+                          <feMergeNode />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                    </defs>
+                  </svg>
+                )}
           </div>
 
                             {/* 選択時のフローティング操作 */}
