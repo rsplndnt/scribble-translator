@@ -654,7 +654,7 @@ const ScribbleTranslator = () => {
       
       editPosition = { 
         x: centerX + offsetX, // 画面座標に変換
-        y: Math.max(50, topY + offsetY - 200) // 画面上部に十分な余裕を持って配置
+        y: Math.max(80, topY + offsetY - 300) // 原文からさらに離して配置（300px上）
       };
     }
     
@@ -1161,7 +1161,7 @@ const ScribbleTranslator = () => {
             <div style={{
           position: "fixed", 
           left: window.innerWidth <= 768 ? "5vw" : Math.max(10, Math.min(window.innerWidth - 460, inlineEditPosition.x - 225)), // 画面端を考慮
-          top: window.innerWidth <= 768 ? "20vh" : Math.max(10, inlineEditPosition.y), // 選択した文字のすぐ上
+          top: window.innerWidth <= 768 ? "15vh" : Math.max(80, inlineEditPosition.y - 50), // さらに上に移動
           right: window.innerWidth <= 768 ? "5vw" : "auto",
           background: "rgba(255, 255, 255, 0.95)", // 白ベース + 透過で下の文字が見える
           border: "1px solid rgba(9, 111, 202, 0.3)", // プライマリーカラーの薄いボーダー
