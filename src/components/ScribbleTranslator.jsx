@@ -1389,10 +1389,9 @@ const ScribbleTranslator = () => {
                 >
                   {isBackTranslating ? (
                     <tspan style={{ 
-                      animation: "dots 1.4s infinite, pulse 2s ease-in-out infinite",
-                      fill: "#096FCA"
+                      animation: "fadeInOut 1.5s ease-in-out infinite"
                     }}>
-                      🔄 逆翻訳中<tspan>...</tspan>
+                      逆翻訳中...
                     </tspan>
                   ) : (
                     truncateText(triplet.back, 60)
@@ -1424,10 +1423,9 @@ const ScribbleTranslator = () => {
                 >
                   {isTranslating ? (
                     <tspan style={{ 
-                      animation: "dots 1.4s infinite, pulse 2s ease-in-out infinite",
-                      fill: "#096FCA"
+                      animation: "fadeInOut 1.5s ease-in-out infinite"
                     }}>
-                      🔄 翻訳中<tspan>...</tspan>
+                      翻訳中...
                     </tspan>
                   ) : (
                     truncateText(triplet.trans, 40)
@@ -1499,31 +1497,12 @@ const keyframes = `
     }
   }
   
-  @keyframes pulse {
+  @keyframes fadeInOut {
     0%, 100% {
-      opacity: 0.6;
-      transform: scale(1);
+      opacity: 0.5;
     }
     50% {
       opacity: 1;
-      transform: scale(1.05);
-    }
-  }
-  
-  @keyframes dots {
-    0%, 20% {
-      color: #096FCA;
-      text-shadow: 0.25em 0 0 transparent, 0.5em 0 0 transparent;
-    }
-    40% {
-      color: #096FCA;
-      text-shadow: 0.25em 0 0 #096FCA, 0.5em 0 0 transparent;
-    }
-    60% {
-      text-shadow: 0.25em 0 0 #096FCA, 0.5em 0 0 #096FCA;
-    }
-    80%, 100% {
-      text-shadow: 0.25em 0 0 transparent, 0.5em 0 0 transparent;
     }
   }
 `;
