@@ -204,7 +204,7 @@ const ScribbleTranslator = () => {
   useEffect(() => {
     const el = topRef.current;
     const w = el?.offsetWidth || 900;
-    const margin = 0;
+    const margin = 20;
     const maxW = Math.max(200, w - margin * 2);
     const N = Math.max(1, displayText.length);
     // 文字サイズを自動調整（最小24〜最大48）
