@@ -945,41 +945,53 @@ const ScribbleTranslator = () => {
   const handleDelete = () => {
     if (!selectedGroups.size) return;
     
-    console.log('削除処理開始 - 選択されたグループ:', selectedGroups);
-    console.log('文節グループ数:', bunsetsuGroups.length);
-    console.log('現在のテキスト:', visibleText);
+    console.log('🗑️ 削除処理開始');
+    console.log('- 選択されたグループ:', selectedGroups);
+    console.log('- 文節グループ数:', bunsetsuGroups.length);
+    console.log('- 文節モード:', isBunsetsuMode);
+    console.log('- 現在のテキスト:', currentText);
+    console.log('- 表示テキスト:', visibleText);
+    console.log('- テキスト長:', currentText.length);
     
     let del = new Set();
     
-    if (bunsetsuGroups.length > 0) {
+    if (bunsetsuGroups.length > 0 && isBunsetsuMode) {
       // 文節がある場合：文節の文字インデックスを取得
       [...selectedGroups].forEach((gi) => {
         const group = bunsetsuGroups[gi];
-        console.log(`文節グループ ${gi}:`, group);
+        console.log(`- 文節グループ ${gi}:`, group);
         if (group?.indices) {
-          group.indices.forEach((i) => del.add(i));
+          group.indices.forEach((i) => {
+            del.add(i);
+            console.log(`  - 削除対象インデックス追加: ${i}`);
+          });
         }
       });
     } else {
       // 文節がない場合：選択されたインデックスをそのまま使用
       del = new Set(selectedGroups);
+      console.log('- 文字モード - 選択されたインデックス:', selectedGroups);
     }
     
-    console.log('削除対象インデックス:', del);
+    console.log('- 最終削除対象インデックス:', del);
     
-    const next = visibleText
-      .split("")
+    // currentTextを使用して削除処理を行う
+    const textArray = currentText.split("");
+    console.log('- テキスト配列:', textArray);
+    
+    const next = textArray
       .filter((_, i) => !del.has(i))
       .join("");
     
-    console.log('削除後のテキスト:', next);
+    console.log('- 削除後のテキスト:', next);
+    console.log('- 削除された文字数:', del.size);
     
     setCurrentText(next);
     setVisibleText(next);
     setSelectedGroups(new Set());
     setMode("shown");
     
-    console.log('削除処理完了');
+    console.log('🗑️ 削除処理完了');
   };
 
   /* ------ 手書き文字認識（Google Cloud Vision API） ------ */
