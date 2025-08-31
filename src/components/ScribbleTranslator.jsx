@@ -286,17 +286,28 @@ const ScribbleTranslator = () => {
   const moveDraw = (e) => {
     if (!isDrawing) return;
     e.preventDefault();
-    setDrawPath((p) => [...p, getMousePos(e)]);
+    setDrawPath((p) => {
+      const newPos = getMousePos(e);
+      const last = p[p.length - 1];
+      // より細かい移動量でパスを更新（ぐしゃぐしゃ線らしく）
+      if (!last || Math.hypot(newPos.x - last.x, newPos.y - last.y) > 1) {
+        return [...p, newPos];
+      }
+      return p;
+    });
   };
   const stopDraw = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
 
-    // 触れた文字index（矩形当たり判定 + 余白）
+    // ぐしゃぐしゃ線の軌跡に基づく文字選択
     const touchedIndex = new Set();
-    const pad = 10; // 当たり余白
+    const pad = 8; // 当たり余白（少し小さく）
 
-    for (const p of drawPath) {
+    // 描画パスを細かく分割して、より自然な選択を実現
+    const interpolatedPath = interpolatePath(drawPath);
+    
+    for (const p of interpolatedPath) {
       for (const pos of tilePositions) {
         const half = pos.charSize / 2;
         const left = pos.x - half - pad;
@@ -339,6 +350,39 @@ const ScribbleTranslator = () => {
       }
     }
     setDrawPath([]);
+  };
+
+  /* ------ パス補間（ぐしゃぐしゃ線を滑らかに） ------ */
+  const interpolatePath = (path) => {
+    if (path.length < 2) return path;
+    
+    const interpolated = [];
+    const step = 2; // 補間の細かさ（小さいほど細かい）
+    
+    for (let i = 0; i < path.length - 1; i++) {
+      const current = path[i];
+      const next = path[i + 1];
+      
+      // 現在の点を追加
+      interpolated.push(current);
+      
+      // 2点間を補間
+      const distance = Math.hypot(next.x - current.x, next.y - current.y);
+      const steps = Math.ceil(distance / step);
+      
+      for (let j = 1; j < steps; j++) {
+        const ratio = j / steps;
+        interpolated.push({
+          x: current.x + (next.x - current.x) * ratio,
+          y: current.y + (next.y - current.y) * ratio
+        });
+      }
+    }
+    
+    // 最後の点を追加
+    interpolated.push(path[path.length - 1]);
+    
+    return interpolated;
   };
 
   /* ------ タップで文節トグル ------ */
@@ -732,12 +776,23 @@ const ScribbleTranslator = () => {
                 <path
                   d={`M ${drawPath.map((p) => `${p.x},${p.y}`).join(" L ")}`}
                   stroke="#096FCA"
-                  strokeWidth={6}
+                  strokeWidth={4}
                   fill="none"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  opacity={0.8}
+                  opacity={0.9}
+                  filter="url(#scribble)"
                 />
+                <defs>
+                  <filter id="scribble">
+                    <feGaussianBlur stdDeviation="1" />
+                    <feOffset dx="0" dy="0" />
+                    <feMerge>
+                      <feMergeNode />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
               </svg>
             )}
           </div>
