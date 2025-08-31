@@ -287,20 +287,24 @@ const ScribbleTranslator = () => {
     const x = e.clientX - r.left;
     const y = e.clientY - r.top;
     
-    // クリック位置が文字の上にある場合は、その文字を選択/解除
-    const clickedChar = tilePositions.find(c => {
-      const distance = Math.hypot(x - c.x, y - c.y);
-      return distance <= c.charSize / 2 + 10; // 文字の半径 + 余裕
-    });
-    
-    if (clickedChar) {
-      // 文字クリック：選択/解除処理
-      console.log('🔥 文字クリック検出:', clickedChar.index);
-      toggleGroupByIndex(clickedChar.index);
-      return; // 描画処理はしない
+    // 選択状態の時のみ文字クリックを許可
+    if (selectedGroups.size > 0) {
+      // クリック位置が文字の上にある場合は、その文字を選択/解除
+      const clickedChar = tilePositions.find(c => {
+        const distance = Math.hypot(x - c.x, y - c.y);
+        return distance <= c.charSize / 2 + 10; // 文字の半径 + 余裕
+      });
+      
+      if (clickedChar) {
+        // 文字クリック：選択/解除処理
+        console.log('🔥 文字クリック検出 (選択状態):', clickedChar.index);
+        toggleGroupByIndex(clickedChar.index);
+        return; // 描画処理はしない
+      }
     }
     
-    // 空白部分クリック：描画開始
+    // 常に描画開始（初期状態でも選択状態でも）
+    console.log('🔥 ぐしゃぐしゃ描画開始');
     try { overlayRef.current?.setPointerCapture?.(e.pointerId); } catch {}
     setIsDrawing(true);
     setDrawPath([{ x, y }]);
@@ -1222,7 +1226,7 @@ const ScribbleTranslator = () => {
                       left: `${c.x}px`,
                       top: `${c.y}px`,
                       transform: "translate(-50%,-50%)",
-                      cursor: "pointer",
+                      cursor: selectedGroups.size > 0 ? "pointer" : "crosshair", // 選択状態でのみクリック可能
                       zIndex: 10, // オーバーレイより下だが見える位置
                       backgroundColor: selected ? "rgba(9, 111, 202, 0.2)" : "transparent",
                       borderRadius: selected ? "4px" : "0px",
