@@ -586,18 +586,42 @@ const ScribbleTranslator = () => {
   /* ------ 削除処理 ------ */
   const handleDelete = () => {
     if (!selectedGroups.size) return;
-    const del = new Set();
-    [...selectedGroups].forEach((gi) =>
-      bunsetsuGroups[gi]?.indices.forEach((i) => del.add(i))
-    );
+    
+    console.log('削除処理開始 - 選択されたグループ:', selectedGroups);
+    console.log('文節グループ数:', bunsetsuGroups.length);
+    console.log('現在のテキスト:', visibleText);
+    
+    let del = new Set();
+    
+    if (bunsetsuGroups.length > 0) {
+      // 文節がある場合：文節の文字インデックスを取得
+      [...selectedGroups].forEach((gi) => {
+        const group = bunsetsuGroups[gi];
+        console.log(`文節グループ ${gi}:`, group);
+        if (group?.indices) {
+          group.indices.forEach((i) => del.add(i));
+        }
+      });
+    } else {
+      // 文節がない場合：選択されたインデックスをそのまま使用
+      del = new Set(selectedGroups);
+    }
+    
+    console.log('削除対象インデックス:', del);
+    
     const next = visibleText
       .split("")
       .filter((_, i) => !del.has(i))
       .join("");
+    
+    console.log('削除後のテキスト:', next);
+    
     setCurrentText(next);
     setVisibleText(next);
     setSelectedGroups(new Set());
     setMode("shown");
+    
+    console.log('削除処理完了');
   };
 
   /* ------ 手書き文字認識（Google Cloud Vision API） ------ */
