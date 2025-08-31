@@ -1138,11 +1138,12 @@ const ScribbleTranslator = () => {
           left: window.innerWidth <= 768 ? "5vw" : Math.max(10, Math.min(window.innerWidth - 460, inlineEditPosition.x - 225)), // 画面端を考慮
           top: window.innerWidth <= 768 ? "20vh" : Math.max(10, inlineEditPosition.y), // 選択した文字のすぐ上
           right: window.innerWidth <= 768 ? "5vw" : "auto",
-          background: "#DDDDDD", // Goodpatch: 背景色統一
-          border: "1px solid #e5e7eb", // Goodpatch: 薄いボーダー
+          background: "rgba(255, 255, 255, 0.95)", // 白ベース + 透過で下の文字が見える
+          border: "1px solid rgba(9, 111, 202, 0.3)", // プライマリーカラーの薄いボーダー
           borderRadius: "12px", // Goodpatch: 角丸を大きく
-          padding: window.innerWidth <= 768 ? "24px" : "24px", // Goodpatch: 余白を大きく
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)", // Goodpatch: シンプルなシャドウ
+          padding: window.innerWidth <= 768 ? "20px" : "20px", // 少し余白を調整
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.1)", // より立体的なシャドウ
+          backdropFilter: "blur(8px)", // 背景ぼかし効果
           zIndex: 1000,
           minWidth: window.innerWidth <= 768 ? "90vw" : "450px",
           maxWidth: window.innerWidth <= 768 ? "90vw" : "600px",
@@ -1201,7 +1202,7 @@ const ScribbleTranslator = () => {
                   overflowWrap: "break-word",
                   overflow: "hidden",
                   boxSizing: "border-box",
-                  background: "#fff", // Goodpatch: 白背景
+                  background: "rgba(255, 255, 255, 0.9)", // 透過白背景
                   color: "#374151", // Goodpatch: テキスト色
                   transition: "all 0.2s ease", // Goodpatch: スムーズな変化
                   "&:focus": {
@@ -1240,9 +1241,9 @@ const ScribbleTranslator = () => {
                 style={{
                   width: window.innerWidth <= 768 ? "100%" : "300px",
                   height: window.innerWidth <= 768 ? "140px" : "150px",
-                  border: "1px solid #d1d5db", // Goodpatch: 薄いボーダー
+                  border: "1px solid rgba(9, 111, 202, 0.2)", // プライマリーカラーの薄いボーダー
                   borderRadius: "8px", // Goodpatch: 角丸
-                  background: "#fff", // Goodpatch: 白背景
+                  background: "rgba(255, 255, 255, 0.9)", // 透過白背景
                   cursor: "crosshair",
                   touchAction: "none",
                   boxShadow: "inset 0 1px 3px rgba(0,0,0,0.05)", // Goodpatch: 内側の軽いシャドウ
