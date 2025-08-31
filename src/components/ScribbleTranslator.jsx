@@ -1924,6 +1924,7 @@ const styles = {
     background: "#f8fafc",
     fontFamily: '"Noto Sans JP", system-ui, -apple-system, sans-serif',
     color: "#374151",
+    overflow: "auto", // スクロール可能にする
   },
   header: {
     background: "linear-gradient(135deg, #096FCA 0%, #76B7ED 100%)",
