@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 
 /* ===================== 翻訳ユーティリティ ===================== */
+// テキスト省略処理
+const truncateText = (text, maxLength = 50) => {
+  if (!text || text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + "...";
+};
+
 // CORS対応の無料API（精度より試作用）
 const translateWithMyMemory = async (text, targetLang) => {
   try {
@@ -1188,7 +1194,7 @@ const ScribbleTranslator = () => {
               letterSpacing: "0.5px",
               textAlign: "left"
             }}>
-              <svg width="100%" height="30" preserveAspectRatio="xMinYMid meet">
+              <svg width="100%" height="30" preserveAspectRatio="xMinYMid meet" style={{ overflow: "visible" }}>
                 <text
                   x="20"
                   y="20"
@@ -1201,8 +1207,9 @@ const ScribbleTranslator = () => {
                   strokeWidth="clamp(1px, 0.2vw, 2px)"
                   paintOrder="stroke fill"
                   letterSpacing="0.5px"
+                  style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
                 >
-                  {triplet.back}
+                  {truncateText(triplet.back, 60)}
                 </text>
               </svg>
             </div>
@@ -1213,7 +1220,7 @@ const ScribbleTranslator = () => {
               letterSpacing: "0.5px",
               textAlign: "left"
             }}>
-              <svg width="100%" height="60" preserveAspectRatio="xMinYMid meet">
+              <svg width="100%" height="60" preserveAspectRatio="xMinYMid meet" style={{ overflow: "visible" }}>
                 <text
                   x="20"
                   y="40"
@@ -1226,8 +1233,9 @@ const ScribbleTranslator = () => {
                   strokeWidth="clamp(2px, 0.4vw, 3px)"
                   paintOrder="stroke fill"
                   letterSpacing="0.5px"
+                  style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
                 >
-                  {triplet.trans}
+                  {truncateText(triplet.trans, 40)}
                 </text>
               </svg>
             </div>
