@@ -1171,9 +1171,29 @@ const ScribbleTranslator = () => {
           </button>
           <button
             onClick={() => {
-              setVisibleText("");
-              setSelectedGroups(new Set());
-              setMode("idle");
+              console.log('リセットボタンクリック');
+              setCurrentText(""); // ◯文字をリセット
+              setVisibleText(""); // 表示テキストをリセット
+              setSelectedGroups(new Set()); // 選択状態をリセット
+              setMode("idle"); // モードをリセット
+              setTriplet({ src: '', back: '', trans: '' }); // 翻訳結果もリセット
+              setInlineEditMode(null); // インライン編集モードもリセット
+              setInlineEditText(''); // インライン編集テキストもリセット
+              setInlineEditPosition(null); // インライン編集位置もリセット
+              setIsInkDrawing(false); // 手書き描画状態もリセット
+              
+              // 手書きキャンバスもクリア
+              if (inkCanvasRef.current) {
+                const canvas = inkCanvasRef.current;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+              }
+              
+              
+              // 履歴もリセットするかどうか（オプション）
+              // setInputHistory([]); // 履歴も完全にリセットしたい場合はコメントアウトを解除
+              
+              console.log('リセット完了');
             }}
             style={styles.btnGhost}
           >
