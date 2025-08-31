@@ -44,6 +44,8 @@ const ScribbleTranslator = () => {
   const [visibleText, setVisibleText] = useState(""); // 「しゃべる→表示」後に出す本文
   const [targetLang, setTargetLang] = useState("en"); // 翻訳先
   const [triplet, setTriplet] = useState({ src: "", back: "", trans: "" }); // 上/中/下
+  const [isTranslating, setIsTranslating] = useState(false); // 翻訳中フラグ
+  const [isBackTranslating, setIsBackTranslating] = useState(false); // 逆翻訳中フラグ
   const [bunsetsuGroups, setBunsetsuGroups] = useState([]); // {indices:number[], text:string}
   const [selectedGroups, setSelectedGroups] = useState(new Set()); // 文節インデックス
   const [isBunsetsuMode, setIsBunsetsuMode] = useState(false); // 文節認識モード（デフォルトOFF）
@@ -215,11 +217,35 @@ const ScribbleTranslator = () => {
       const text = (src || "").trim();
       if (!text) {
         setTriplet({ src: "", back: "", trans: "" });
+        setIsTranslating(false);
+        setIsBackTranslating(false);
         return;
       }
-      const trans = await translateWithMyMemory(text, targetLang);
-      const back = await translateToJapanese(trans, targetLang);
-      setTriplet({ src: text, back, trans });
+      
+      // 翻訳開始
+      setIsTranslating(true);
+      setIsBackTranslating(false);
+      console.log('🔄 翻訳開始:', text, '→', targetLang);
+      
+      try {
+        const trans = await translateWithMyMemory(text, targetLang);
+        console.log('✅ 翻訳完了:', trans);
+        
+        // 逆翻訳開始
+        setIsTranslating(false);
+        setIsBackTranslating(true);
+        console.log('🔄 逆翻訳開始:', trans, '→ ja');
+        
+        const back = await translateToJapanese(trans, targetLang);
+        console.log('✅ 逆翻訳完了:', back);
+        
+        setTriplet({ src: text, back, trans });
+        setIsBackTranslating(false);
+      } catch (error) {
+        console.error('❌ 翻訳エラー:', error);
+        setIsTranslating(false);
+        setIsBackTranslating(false);
+      }
     };
     run();
   }, [visibleText, selectedGroups, bunsetsuGroups, targetLang]);
@@ -1361,7 +1387,16 @@ const ScribbleTranslator = () => {
                   letterSpacing="0.5px"
                   style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
                 >
-                  {truncateText(triplet.back, 60)}
+                  {isBackTranslating ? (
+                    <tspan style={{ 
+                      animation: "dots 1.4s infinite, pulse 2s ease-in-out infinite",
+                      fill: "#096FCA"
+                    }}>
+                      🔄 逆翻訳中<tspan>...</tspan>
+                    </tspan>
+                  ) : (
+                    truncateText(triplet.back, 60)
+                  )}
                 </text>
               </svg>
                       </div>
@@ -1387,14 +1422,23 @@ const ScribbleTranslator = () => {
                   letterSpacing="0.5px"
                   style={{ wordWrap: "break-word", overflowWrap: "break-word" }}
                 >
-                  {truncateText(triplet.trans, 40)}
+                  {isTranslating ? (
+                    <tspan style={{ 
+                      animation: "dots 1.4s infinite, pulse 2s ease-in-out infinite",
+                      fill: "#096FCA"
+                    }}>
+                      🔄 翻訳中<tspan>...</tspan>
+                    </tspan>
+                  ) : (
+                    truncateText(triplet.trans, 40)
+                  )}
                 </text>
               </svg>
                     </div>
                 </div>
         ) : (
           <div style={styles.empty}>
-            まず「🎤 音声入力」で話してから「🗣️ しゃべる→表示」を押してください
+            まず「🎤 音声入力」で話してから「🗣️ 表示」を押してください
               </div>
             )}
           </div>
@@ -1452,6 +1496,34 @@ const keyframes = `
     }
     50% {
       box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.6);
+    }
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+  }
+  
+  @keyframes dots {
+    0%, 20% {
+      color: #096FCA;
+      text-shadow: 0.25em 0 0 transparent, 0.5em 0 0 transparent;
+    }
+    40% {
+      color: #096FCA;
+      text-shadow: 0.25em 0 0 #096FCA, 0.5em 0 0 transparent;
+    }
+    60% {
+      text-shadow: 0.25em 0 0 #096FCA, 0.5em 0 0 #096FCA;
+    }
+    80%, 100% {
+      text-shadow: 0.25em 0 0 transparent, 0.5em 0 0 transparent;
     }
   }
 `;
