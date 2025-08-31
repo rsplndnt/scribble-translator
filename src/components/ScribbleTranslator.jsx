@@ -225,7 +225,7 @@ const ScribbleTranslator = () => {
     if (isListening) {
       recognition.stop();
       setIsListening(false);
-    } else {
+                } else {
       setCurrentText(""); // 新規に聞き直す
       recognition.start();
       setIsListening(true);
@@ -1098,8 +1098,16 @@ const ScribbleTranslator = () => {
         <div style={styles.toolbarMain}>
           {/* 入力方式選択ドロップダウン */}
           <div style={{ position: 'relative' }}>
-            <button 
-              onClick={() => setShowInputDropdown(!showInputDropdown)}
+                        <button 
+              onClick={() => {
+                // 音声入力の場合は録音開始/停止
+                if (selectedInputMethod === 'voice') {
+                  toggleMic();
+                } else {
+                  // キーボード・手書きの場合はドロップダウン表示
+                  setShowInputDropdown(!showInputDropdown);
+                }
+              }}
               style={{
                 ...styles.btnBlue,
                 display: 'flex',
@@ -1107,49 +1115,18 @@ const ScribbleTranslator = () => {
                 gap: '8px',
                 minWidth: '160px',
                 justifyContent: 'space-between',
+                backgroundColor: selectedInputMethod === 'voice' && isListening ? '#dc2626' : '#096FCA',
               }}
             >
               <span>
-                {selectedInputMethod === 'voice' && '🎤 音声入力'}
+                {selectedInputMethod === 'voice' && (isListening ? '⏹ 停止' : '🎤 音声入力')}
                 {selectedInputMethod === 'keyboard' && '⌨️ キーボード'}
                 {selectedInputMethod === 'handwriting' && '✍️ 手書き'}
               </span>
               <span style={{ fontSize: '12px' }}>▼</span>
             </button>
             
-            {/* 入力開始ボタン */}
-            <button
-              onClick={() => {
-                if (selectedInputMethod === 'voice') {
-                  toggleMic();
-                } else if (selectedInputMethod === 'keyboard') {
-                  setInlineEditMode('keyboard');
-                  setInlineEditText('');
-                  const centerX = window.innerWidth / 2 - 225;
-                  const centerY = window.innerHeight / 2 - 100;
-                  setInlineEditPosition({ x: centerX, y: centerY });
-                  setIsComposing(false);
-                  setEnterPressCount(0);
-                } else if (selectedInputMethod === 'handwriting') {
-                  setInlineEditMode('ink');
-                  setInlineEditText('');
-                  const centerX = window.innerWidth / 2 - 150;
-                  const centerY = window.innerHeight / 2 - 100;
-                  setInlineEditPosition({ x: centerX, y: centerY });
-                  setIsComposing(false);
-                  setEnterPressCount(0);
-                }
-              }}
-              style={{
-                ...styles.btnBlue,
-                marginLeft: '8px',
-                backgroundColor: isListening ? '#dc2626' : '#096FCA',
-              }}
-            >
-              {selectedInputMethod === 'voice' && (isListening ? '⏹ 停止' : '🎤 開始')}
-              {selectedInputMethod === 'keyboard' && '⌨️ 入力開始'}
-              {selectedInputMethod === 'handwriting' && '✍️ 入力開始'}
-            </button>
+            
             
             {/* ドロップダウンメニュー */}
             {showInputDropdown && (
@@ -1165,12 +1142,12 @@ const ScribbleTranslator = () => {
                 zIndex: 1000,
                 marginTop: '4px',
               }}>
-                <button
+          <button 
                   onClick={() => {
                     setSelectedInputMethod('voice');
                     setShowInputDropdown(false);
                   }}
-                  style={{
+            style={{
                     width: '100%',
                     padding: '12px 16px',
                     border: 'none',
@@ -1183,11 +1160,19 @@ const ScribbleTranslator = () => {
                   }}
                 >
                   🎤 音声入力
-                </button>
-                <button
+          </button>
+                            <button
                   onClick={() => {
                     setSelectedInputMethod('keyboard');
                     setShowInputDropdown(false);
+                    // キーボード入力を直接開始
+                    setInlineEditMode('keyboard');
+                    setInlineEditText('');
+                    const centerX = window.innerWidth / 2 - 225;
+                    const centerY = window.innerHeight / 2 - 100;
+                    setInlineEditPosition({ x: centerX, y: centerY });
+                    setIsComposing(false);
+                    setEnterPressCount(0);
                   }}
                   style={{
                     width: '100%',
@@ -1207,6 +1192,14 @@ const ScribbleTranslator = () => {
                   onClick={() => {
                     setSelectedInputMethod('handwriting');
                     setShowInputDropdown(false);
+                    // 手書き入力を直接開始
+                    setInlineEditMode('ink');
+                    setInlineEditText('');
+                    const centerX = window.innerWidth / 2 - 150;
+                    const centerY = window.innerHeight / 2 - 100;
+                    setInlineEditPosition({ x: centerX, y: centerY });
+                    setIsComposing(false);
+                    setEnterPressCount(0);
                   }}
                   style={{
                     width: '100%',
@@ -1237,7 +1230,7 @@ const ScribbleTranslator = () => {
               }}
             >
               📋 履歴 ({inputHistory.length})
-            </button>
+          </button>
           
                     {/* 音声入力選択時のみ表示ボタンを表示 */}
           {selectedInputMethod === 'voice' && (
@@ -1305,7 +1298,7 @@ const ScribbleTranslator = () => {
                           <span style={styles.textCount}>📝 {currentText.length}文字</span>
           )}
         </div>
-          </div>
+      </div>
 
       {/* インライン編集ウィンドウ（Goodpatch風デザイン） */}
       {inlineEditMode && inlineEditPosition && (
@@ -1449,7 +1442,7 @@ const ScribbleTranslator = () => {
                   </div>
                 </div>
           )}
-            </div>
+          </div>
         )}
         
       <div style={styles.main}>
@@ -1467,7 +1460,7 @@ const ScribbleTranslator = () => {
                   return (
                   <svg
                     key={c.id}
-                style={{
+                      style={{
                       position: "absolute",
                       left: `${c.x}px`,
                       top: `${c.y}px`,
@@ -1556,10 +1549,10 @@ const ScribbleTranslator = () => {
           )}
 
 
-                      </div>
+          </div>
 
                         {/* 2) 折り返し（日本語） */}
-                      <div style={{
+            <div style={{
               marginBottom: 14, 
               opacity: 0.95,
               fontWeight: 800,
@@ -1638,7 +1631,7 @@ const ScribbleTranslator = () => {
               {/* 音声認識履歴モーダル */}
       {showHistory && (
         <div 
-          style={{
+                style={{
             position: "fixed",
             top: 0,
             left: 0,
@@ -1672,7 +1665,7 @@ const ScribbleTranslator = () => {
               marginBottom: "20px",
             }}>
               <h3 style={{ margin: 0, color: "#374151" }}>🎤 入力履歴（上書き挿入）</h3>
-              <button 
+              <button
                 onClick={() => setShowHistory(false)}
                 style={{
                   background: "none",
@@ -1684,8 +1677,8 @@ const ScribbleTranslator = () => {
               >
                 ✖
               </button>
-            </div>
-            
+        </div>
+
             {inputHistory.length === 0 ? (
               <p style={{ color: "#6B7280", textAlign: "center" }}>まだ入力履歴がありません</p>
             ) : (
@@ -1720,7 +1713,7 @@ const ScribbleTranslator = () => {
                       transition: "all 0.2s ease",
                     }}
                   >
-                    <div style={{ 
+          <div style={{
                       display: "flex", 
                       justifyContent: "space-between", 
                       alignItems: "flex-start",
@@ -1740,7 +1733,7 @@ const ScribbleTranslator = () => {
                           borderRadius: "4px"
                         }}>
                           #{index + 1}
-                        </span>
+                </span>
                         {/* 入力方式の絵文字タグ */}
                         <span style={{
                           fontSize: "14px",
@@ -1754,16 +1747,16 @@ const ScribbleTranslator = () => {
                           {item.type === "voice" ? "🎤" : 
                            item.type === "keyboard" ? "⌨️" : "✍️"}
                         </span>
-                      </div>
+          </div>
                       <span style={{ 
                         fontSize: "11px", 
                         color: "#6B7280"
                       }}>
                         {item.timestamp.toLocaleTimeString()}
                       </span>
-                    </div>
+            </div>
                     
-                    <div style={{ 
+                  <div style={{
                       color: "#374151",
                       fontSize: "15px",
                       lineHeight: "1.4",
@@ -1771,15 +1764,15 @@ const ScribbleTranslator = () => {
                       marginBottom: "12px"
                     }}>
                       {item.text}
-                    </div>
-                    
+            </div>
+            
                     <div style={{
                       display: "flex",
                       gap: "8px",
                       justifyContent: "flex-end"
                     }}>
                       {/* 上書き挿入ボタン */}
-                      <button
+              <button 
                         onClick={() => {
                           console.log('履歴上書き挿入ボタンクリック:', { item, currentText: currentText });
                           setCurrentText(item.text); // 既存テキストを上書き
@@ -1789,7 +1782,7 @@ const ScribbleTranslator = () => {
                           setShowHistory(false);
                           console.log('履歴上書き挿入完了:', { item });
                         }}
-                        style={{
+                style={{
                           padding: "6px 12px",
                           fontSize: "12px",
                           fontWeight: "600",
@@ -1810,23 +1803,23 @@ const ScribbleTranslator = () => {
                         }}
                       >
                         🔄 上書き挿入
-                      </button>
+              </button>
                       
 
-                    </div>
+                      </div>
                   </li>
                 ))}
               </ul>
               </>
             )}
-          </div>
-        </div>
-      )}
+                </div>
+              </div>
+            )}
 
       {/* アクセシビリティ：翻訳更新の読み上げ */}
         <div aria-live="polite" aria-atomic="true" style={{position:'absolute', left:-9999, top:'auto'}}>
           {triplet.back} {triplet.trans}
-      </div>
+          </div>
 
 
     </div>
