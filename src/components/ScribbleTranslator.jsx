@@ -183,6 +183,32 @@ const ScribbleTranslator = () => {
         margin-right: 4px;
         vertical-align: middle;
       }
+      
+      /* カスタムスクロールバー */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        transition: background 0.2s ease;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.3);
+      }
+      
+      /* Firefox用スクロールバー */
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.05);
+      }
     `;
     document.head.appendChild(materialStyle);
     
@@ -1060,7 +1086,7 @@ const ScribbleTranslator = () => {
 
   /* ------ UI ------ */
   return (
-    <div style={styles.container}>
+    <div className="custom-scrollbar" style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>👆しゃべり描き for the future</h1>
       </div>
@@ -1627,6 +1653,7 @@ const ScribbleTranslator = () => {
           onClick={() => setShowHistory(false)} // オーバーレイクリックでモーダルを閉じる
         >
           <div 
+            className="custom-scrollbar"
             style={{
               background: "#FFFFFF",
               borderRadius: "12px",
