@@ -906,30 +906,49 @@ const ScribbleTranslator = () => {
 
   /* ------ フローティング（削除/キャンセル）位置 ------ */
   useEffect(() => {
+    console.log('🎯 フローティングボタン位置計算開始');
+    console.log('- selectedGroups:', selectedGroups);
+    console.log('- bunsetsuGroups.length:', bunsetsuGroups.length);
+    console.log('- isBunsetsuMode:', isBunsetsuMode);
+    console.log('- tilePositions.length:', tilePositions.length);
+    
     if (!selectedGroups.size) {
+      console.log('🎯 選択グループなし - floatPosをクリア');
       setFloatPos(null);
       return;
     }
     
     let selectedIdx;
-    if (bunsetsuGroups.length > 0) {
-      // 文節がある場合：文節の文字インデックスを取得
+    if (bunsetsuGroups.length > 0 && isBunsetsuMode) {
+      // 文節モード：文節の文字インデックスを取得
       selectedIdx = new Set(
         [...selectedGroups].flatMap((gi) => bunsetsuGroups[gi]?.indices ?? [])
       );
-      } else {
-      // 文節がない場合：選択されたインデックスをそのまま使用
+      console.log('🎯 文節モード - selectedIdx:', selectedIdx);
+    } else {
+      // 文字モード：選択されたインデックスをそのまま使用
       selectedIdx = selectedGroups;
+      console.log('🎯 文字モード - selectedIdx:', selectedIdx);
     }
     
     const pts = [...selectedIdx].map((i) => {
       const p = tilePositions[i];
       return p ? { x: p.x, y: p.y } : null;
     }).filter(Boolean);
-    if (!pts.length) return;
+    
+    console.log('🎯 有効な位置ポイント:', pts);
+    
+    if (!pts.length) {
+      console.log('🎯 有効な位置ポイントなし - floatPosをクリア');
+      setFloatPos(null);
+      return;
+    }
+    
     // 画面境界を考慮したボタン配置
     const baseX = Math.max(...pts.map((p) => p.x)) + 10;
     const baseY = Math.max(...pts.map((p) => p.y)) + 35;
+    
+    console.log('🎯 基本位置:', { baseX, baseY });
     
     // モバイル対応：画面端からはみ出さないよう調整
     const buttonWidth = window.innerWidth <= 768 ? 120 : 200; // ボタン群の幅
@@ -938,8 +957,11 @@ const ScribbleTranslator = () => {
     const x = Math.max(10, Math.min(baseX, window.innerWidth - buttonWidth - 10));
     const y = Math.max(10, Math.min(baseY, window.innerHeight - buttonHeight - 10));
     
+    console.log('🎯 調整後位置:', { x, y, buttonWidth, buttonHeight });
+    console.log('🎯 画面サイズ:', { width: window.innerWidth, height: window.innerHeight });
+    
     setFloatPos({ x, y });
-  }, [selectedGroups, bunsetsuGroups, tilePositions]);
+  }, [selectedGroups, bunsetsuGroups, tilePositions, isBunsetsuMode]);
 
   /* ------ 削除処理 ------ */
   const handleDelete = () => {
@@ -1560,7 +1582,19 @@ const ScribbleTranslator = () => {
 
                             {/* 選択時のフローティング操作 */}
               {mode === "selecting" && floatPos && selectedGroups.size > 0 && !inlineEditMode && (
-            <div style={{
+                <>
+                  {/* デバッグ情報表示 */}
+                  {console.log('🎯 フローティングボタン表示条件:', {
+                    mode,
+                    floatPos,
+                    selectedGroupsSize: selectedGroups.size,
+                    inlineEditMode,
+                    isVisible: mode === "selecting" && floatPos && selectedGroups.size > 0 && !inlineEditMode
+                  })}
+                </>
+              )}
+              {mode === "selecting" && floatPos && selectedGroups.size > 0 && !inlineEditMode && (
+                <div style={{
                   position: "absolute", 
                   left: floatPos.x, 
                   top: floatPos.y, 
@@ -1571,15 +1605,17 @@ const ScribbleTranslator = () => {
                   pointerEvents: "auto",
                   // Goodpatch風の軽いシャドウ
                   filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.1))",
+                  // デバッグ用の背景色（開発時のみ）
+                  // backgroundColor: "rgba(255, 0, 0, 0.1)",
                 }}>
-                                    <button onClick={handleDelete} style={styles.btnDangerSm}>🗑 削除</button>
+                  <button onClick={handleDelete} style={styles.btnDangerSm}>🗑 削除</button>
                   <button onClick={() => startInlineEdit('keyboard')} style={styles.btnPrimarySm}>⌨️ キーボード修正</button>
                   <button onClick={() => startInlineEdit('ink')} style={styles.btnPrimarySm}>✍️ 手書き修正</button>
                   <button onClick={() => setSelectedGroups(new Set())} style={styles.btnGhostSm}>
                     ✖ キャンセル
-              </button>
-            </div>
-          )}
+                  </button>
+                </div>
+              )}
 
 
           </div>
