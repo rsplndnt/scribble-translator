@@ -958,7 +958,7 @@ const ScribbleTranslator = () => {
                 }}
                 style={{ display: 'none' }}
               />
-              🤖 文節認識
+              🤖 文節認識ON
             </label>
             
             <label style={{
@@ -984,7 +984,7 @@ const ScribbleTranslator = () => {
                 }}
                 style={{ display: 'none' }}
               />
-              🔤 文字認識
+              🔤 文節認識OFF
             </label>
           </div>
         </div>
