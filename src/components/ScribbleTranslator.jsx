@@ -91,6 +91,7 @@ const ScribbleTranslator = () => {
   // タイル描画
   const topRef = useRef(null);
   const overlayRef = useRef(null);
+  const drawCanvasRef = useRef(null); // Canvas描画用
   const [tilePositions, setTilePositions] = useState([]); // 1行の各文字座標
   const [drawPath, setDrawPath] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -365,6 +366,19 @@ const ScribbleTranslator = () => {
       }
     }
     
+    // Canvas描画の初期化
+    const canvas = drawCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#096FCA';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+    
     // 常に描画開始（初期状態でも選択状態でも）
     console.log('🔥 ぐしゃぐしゃ描画開始');
     try { overlayRef.current?.setPointerCapture?.(e.pointerId); } catch {}
@@ -375,14 +389,26 @@ const ScribbleTranslator = () => {
     if (!isDrawing) return;
     e.preventDefault();
     e.stopPropagation();
+    
     const r = overlayRef.current.getBoundingClientRect();
     const x = e.clientX - r.left;
     const y = e.clientY - r.top;
+    
+    // Canvas描画で滑らかな線を描画
+    const canvas = drawCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+    
+    // 描画パスも更新（選択判定用）
     setDrawPath((p) => {
-      const last = p[p.length - 1];
-      // 移動量の閾値を下げて、線が切れにくくする
-      if (!last || Math.hypot(x - last.x, y - last.y) > 0.1) return [...p, { x, y }];
-      return p;
+      const newPath = [...p, { x, y }];
+      if (newPath.length > 1000) {
+        return newPath.slice(-1000);
+      }
+      return newPath;
     });
   };
   const stopDrawPointer = (e) => {
@@ -397,6 +423,13 @@ const ScribbleTranslator = () => {
   const stopDraw = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
+    
+    // Canvas描画をクリア
+    const canvas = drawCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
 
     // 線の折り返しをチェック - 直線的すぎる場合は選択しない
     const hasChanges = hasSignificantDirectionChanges(drawPath);
@@ -1387,7 +1420,7 @@ const ScribbleTranslator = () => {
                 );
               })}
 
-              {/* なぞりオーバーレイ */}
+              {/* なぞりオーバーレイ（Canvas描画） */}
           <div
             ref={overlayRef}
             style={{
@@ -1400,30 +1433,18 @@ const ScribbleTranslator = () => {
               onPointerUp={stopDrawPointer}
               onPointerLeave={stopDrawPointer}
             >
-                            {isDrawing && drawPath.length > 1 && (
-                  <svg style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 25 }}>
-                <path
-                      d={`M ${drawPath.map((p) => `${p.x},${p.y}`).join(" L ")}`}
-                      stroke={hasSignificantDirectionChanges(drawPath) ? "#096FCA" : "#FF6B6B"}
-                      strokeWidth={4}
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      opacity={0.9}
-                      filter="url(#scribble)"
-                    />
-                    <defs>
-                      <filter id="scribble">
-                        <feGaussianBlur stdDeviation="1" />
-                        <feOffset dx="0" dy="0" />
-                        <feMerge>
-                          <feMergeNode />
-                          <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                      </filter>
-                    </defs>
-              </svg>
-            )}
+              {/* Canvas描画で滑らかな線を実現 */}
+              <canvas
+                ref={drawCanvasRef}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  pointerEvents: "none",
+                  zIndex: 25,
+                }}
+                width={overlayRef.current?.offsetWidth || 800}
+                height={overlayRef.current?.offsetHeight || 600}
+              />
           </div>
 
                             {/* 選択時のフローティング操作 */}
