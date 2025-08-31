@@ -87,11 +87,11 @@ const ScribbleTranslator = () => {
   const [isBunsetsuMode, setIsBunsetsuMode] = useState(false); // 文節認識モード（デフォルトOFF）
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
-  const [voiceHistory, setVoiceHistory] = useState([
-    "テスト履歴1",
-    "テスト履歴2", 
-    "テスト履歴3"
-  ]); // 音声認識履歴（最大10個）
+  const [inputHistory, setInputHistory] = useState([
+    { type: "voice", text: "テスト履歴1", timestamp: new Date() },
+    { type: "keyboard", text: "テスト履歴2", timestamp: new Date() },
+    { type: "handwriting", text: "テスト履歴3", timestamp: new Date() }
+  ]); // 全入力方式の履歴（最大10個）
   const [showHistory, setShowHistory] = useState(false); // 履歴表示フラグ
 
   // タイル描画
@@ -152,9 +152,12 @@ const ScribbleTranslator = () => {
           setCurrentText((p) => p + finalTranscript);
           
           // 最終結果を履歴に追加
-          setVoiceHistory(prev => {
-            const newHistory = [finalTranscript, ...prev.slice(0, 9)]; // 最新を先頭に、最大10個
-            console.log('履歴更新:', { finalTranscript, newHistory });
+          setInputHistory(prev => {
+            const newHistory = [
+              { type: "voice", text: finalTranscript, timestamp: new Date() },
+              ...prev.slice(0, 9)
+            ]; // 最新を先頭に、最大10個
+            console.log('音声履歴更新:', { finalTranscript, newHistory });
             return newHistory;
           });
         }
@@ -754,14 +757,26 @@ const ScribbleTranslator = () => {
   /* ------ インライン編集完了 ------ */
   const finishInlineEdit = () => {
     if (inlineEditText.trim()) {
+      const finalText = inlineEditText.trim();
+      
+      // 履歴に追加
+      setInputHistory(prev => {
+        const newHistory = [
+          { type: "keyboard", text: finalText, timestamp: new Date() },
+          ...prev.slice(0, 9)
+        ];
+        console.log('キーボード履歴更新:', { finalText, newHistory });
+        return newHistory;
+      });
+      
       // 最初の入力時（visibleTextがない場合）は直接設定
       if (!visibleText) {
-        setCurrentText(inlineEditText.trim());
-        setVisibleText(inlineEditText.trim());
+        setCurrentText(finalText);
+        setVisibleText(finalText);
         setMode("shown");
-    } else {
+      } else {
         // 既存のテキストがある場合は置換
-        applyReplace(inlineEditText);
+        applyReplace(finalText);
       }
     }
     setInlineEditMode(null);
@@ -839,6 +854,17 @@ const ScribbleTranslator = () => {
       
       if (recognizedText) {
         setInlineEditText(recognizedText);
+        
+        // 履歴に追加
+        setInputHistory(prev => {
+          const newHistory = [
+            { type: "handwriting", text: recognizedText, timestamp: new Date() },
+            ...prev.slice(0, 9)
+          ];
+          console.log('手書き履歴更新:', { recognizedText, newHistory });
+          return newHistory;
+        });
+        
         // 手書きモードからキーボードモードに切り替え
         setInlineEditMode('keyboard');
       } else {
@@ -1094,18 +1120,18 @@ const ScribbleTranslator = () => {
           </button>
           
           {/* 履歴表示ボタン */}
-          <button 
-            onClick={() => {
-              console.log('履歴ボタンクリック:', { showHistory, voiceHistory });
-              setShowHistory(!showHistory);
-            }} 
-            style={{
-              ...styles.btnGhost,
-              backgroundColor: showHistory ? "rgba(9, 111, 202, 0.1)" : "transparent"
-            }}
-          >
-            📋 履歴ボタン ({voiceHistory.length})
-          </button>
+                      <button 
+              onClick={() => {
+                console.log('履歴ボタンクリック:', { showHistory, inputHistory });
+                setShowHistory(!showHistory);
+              }} 
+              style={{
+                ...styles.btnGhost,
+                backgroundColor: showHistory ? "rgba(9, 111, 202, 0.1)" : "transparent"
+              }}
+            >
+              📋 履歴 ({inputHistory.length})
+            </button>
           
           <button 
             onClick={() => {
@@ -1627,8 +1653,8 @@ const ScribbleTranslator = () => {
               </button>
             </div>
             
-            {voiceHistory.length === 0 ? (
-              <p style={{ color: "#6B7280", textAlign: "center" }}>まだ音声認識の履歴がありません</p>
+            {inputHistory.length === 0 ? (
+              <p style={{ color: "#6B7280", textAlign: "center" }}>まだ入力履歴がありません</p>
             ) : (
               <>
                 <p style={{ 
@@ -1650,7 +1676,7 @@ const ScribbleTranslator = () => {
                 flexDirection: "column",
                 gap: "8px"
               }}>
-                {voiceHistory.map((text, index) => (
+                {inputHistory.map((item, index) => (
                   <li 
                     key={index}
                     style={{
@@ -1667,21 +1693,40 @@ const ScribbleTranslator = () => {
                       alignItems: "flex-start",
                       marginBottom: "12px"
                     }}>
-                      <span style={{ 
-                        fontSize: "11px", 
-                        color: "#6B7280",
-                        fontWeight: "600",
-                        backgroundColor: "#E5E7EB",
-                        padding: "2px 6px",
-                        borderRadius: "4px"
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px"
                       }}>
-                        #{index + 1}
-                      </span>
+                        <span style={{ 
+                          fontSize: "11px", 
+                          color: "#6B7280",
+                          fontWeight: "600",
+                          backgroundColor: "#E5E7EB",
+                          padding: "2px 6px",
+                          borderRadius: "4px"
+                        }}>
+                          #{index + 1}
+                        </span>
+                        {/* 入力方式の絵文字タグ */}
+                        <span style={{
+                          fontSize: "14px",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          backgroundColor: item.type === "voice" ? "#E3F2FD" : 
+                                         item.type === "keyboard" ? "#F3E5F5" : "#E8F5E8",
+                          color: item.type === "voice" ? "#1976D2" : 
+                                 item.type === "keyboard" ? "#7B1FA2" : "#388E3C"
+                        }}>
+                          {item.type === "voice" ? "🎤" : 
+                           item.type === "keyboard" ? "⌨️" : "✍️"}
+                        </span>
+                      </div>
                       <span style={{ 
                         fontSize: "11px", 
                         color: "#6B7280"
                       }}>
-                        {new Date().toLocaleTimeString()}
+                        {item.timestamp.toLocaleTimeString()}
                       </span>
                     </div>
                     
@@ -1692,7 +1737,7 @@ const ScribbleTranslator = () => {
                       wordBreak: "break-word",
                       marginBottom: "12px"
                     }}>
-                      {text}
+                      {item.text}
                     </div>
                     
                     <div style={{
@@ -1703,10 +1748,10 @@ const ScribbleTranslator = () => {
                       {/* 挿入ボタン */}
                       <button
                         onClick={() => {
-                          console.log('履歴挿入ボタンクリック:', { text, currentText: currentText });
-                          setCurrentText(prev => prev + text); // 既存テキストに追加
+                          console.log('履歴挿入ボタンクリック:', { item, currentText: currentText });
+                          setCurrentText(prev => prev + item.text); // 既存テキストに追加
                           setShowHistory(false);
-                          console.log('履歴挿入完了:', { text });
+                          console.log('履歴挿入完了:', { item });
                         }}
                         style={{
                           padding: "6px 12px",
@@ -1734,13 +1779,13 @@ const ScribbleTranslator = () => {
                       {/* 置換ボタン */}
                       <button
                         onClick={() => {
-                          console.log('履歴置換ボタンクリック:', { text, currentText: currentText });
-                          setCurrentText(text); // 原文を上書き更新
-                          setVisibleText(text); // 表示テキストも即座に更新
+                          console.log('履歴置換ボタンクリック:', { item, currentText: currentText });
+                          setCurrentText(item.text); // 原文を上書き更新
+                          setVisibleText(item.text); // 表示テキストも即座に更新
                           setSelectedGroups(new Set()); // 選択状態をリセット
                           setMode("shown"); // 表示モードに切り替え
                           setShowHistory(false);
-                          console.log('履歴置換完了:', { text });
+                          console.log('履歴置換完了:', { item });
                         }}
                         style={{
                           padding: "6px 12px",
