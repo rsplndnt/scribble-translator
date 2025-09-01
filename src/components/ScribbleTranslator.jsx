@@ -351,8 +351,8 @@ const ScribbleTranslator = () => {
   /* ------ 1行タイルのレイアウト ------ */
   const displayText = visibleText;
   useEffect(() => {
-    // visibleTextが変更されたら選択状態をリセット
-    if (mode === 'idle' || mode === 'shown') {
+    // visibleTextが変更されたら選択状態をリセット（ただし編集中は除く）
+    if ((mode === 'idle' || mode === 'shown') && !inlineEditMode) {
       setSelectedGroups(new Set());
       setFloatPos(null);
       setOverwriteAllOnFinish(false);
@@ -493,9 +493,11 @@ const ScribbleTranslator = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
     
-    // 選択前の状態をクリア
-    setOverwriteAllOnFinish(false);
-    setShouldSelectAllOnOpen(false);
+    // 選択前の状態をクリア（ただしインライン編集中は除く）
+    if (!inlineEditMode) {
+      setOverwriteAllOnFinish(false);
+      setShouldSelectAllOnOpen(false);
+    }
     
     // Canvas描画をクリア
     const canvas = drawCanvasRef.current;
@@ -808,6 +810,7 @@ const ScribbleTranslator = () => {
     
     setInlineEditText(text);
     setShouldSelectAllOnOpen(true);
+    setOverwriteAllOnFinish(false); // フローティングボタンからの編集は部分置換
     setInlineEditMode(mode);
     setInlineEditPosition(editPosition);
     
@@ -862,11 +865,9 @@ const ScribbleTranslator = () => {
     setIsInkDrawing(false);
     setOverwriteAllOnFinish(false);
     setShouldSelectAllOnOpen(false);
-    // キャンセル時は選択状態も解除
-    if (selectedGroups.size > 0) {
-      setSelectedGroups(new Set());
-      setFloatPos(null);
-    }
+    // キャンセル時は選択状態を保持（再編集可能にするため）
+    // setSelectedGroups(new Set());
+    // setFloatPos(null);
   };
 
   /* ------ 手書き開始 ------ */
