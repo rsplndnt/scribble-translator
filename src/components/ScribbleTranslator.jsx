@@ -308,10 +308,25 @@ const ScribbleTranslator = () => {
   /* ------ 翻訳（表示するたび/編集するたび） ------ */
   useEffect(() => {
     const run = async () => {
-      const src =
-        selectedGroups.size > 0
-          ? [...selectedGroups].sort((a, b) => a - b).map((i) => bunsetsuGroups[i]?.text ?? "").join("")
-          : visibleText;
+      let src;
+      if (selectedGroups.size > 0) {
+        // 選択がある場合は、翻訳処理に関係なく確実にテキストを取得
+        const baseText = visibleText || currentText || '';
+        if (bunsetsuGroups.length > 0 && isBunsetsuMode) {
+          // 文節モード：文節のインデックスから文字を取得
+          const selectedCharIndices = [...selectedGroups].flatMap(gIdx => bunsetsuGroups[gIdx]?.indices || []);
+          src = selectedCharIndices.sort((a, b) => a - b)
+            .map(i => baseText[i] ?? '')
+            .join('');
+        } else {
+          // 文字モード：選択されたインデックスから直接文字を取得
+          src = [...selectedGroups].sort((a, b) => a - b)
+            .map(i => baseText[i] ?? '')
+            .join('');
+        }
+      } else {
+        src = visibleText;
+      }
       const text = (src || "").trim();
       if (!text) {
         setTriplet({ src: "", back: "", trans: "" });
@@ -346,7 +361,7 @@ const ScribbleTranslator = () => {
       }
     };
     run();
-  }, [visibleText, selectedGroups, bunsetsuGroups, targetLang]);
+  }, [visibleText, selectedGroups, bunsetsuGroups, targetLang, isBunsetsuMode, currentText]);
 
   /* ------ 1行タイルのレイアウト ------ */
   const displayText = visibleText;
@@ -769,13 +784,17 @@ const ScribbleTranslator = () => {
     
     // 選択された文字のテキストを取得
     let text = '';
-    // 本番環境で visibleText が未反映のタイミングがあるためフォールバック
+    // 翻訳中でも確実にテキストを取得できるよう、常にbaseTextから直接取得
     const baseText = (visibleText && visibleText.length > 0) ? visibleText : currentText;
-    if (bunsetsuGroups.length > 0) {
-      text = [...selectedGroups].sort((a, b) => a - b)
-        .map(i => bunsetsuGroups[i]?.text ?? '')
+    
+    if (bunsetsuGroups.length > 0 && isBunsetsuMode) {
+      // 文節モード：文節のインデックスから文字を取得
+      const selectedCharIndices = [...selectedGroups].flatMap(gIdx => bunsetsuGroups[gIdx]?.indices || []);
+      text = selectedCharIndices.sort((a, b) => a - b)
+        .map(i => (baseText || '')[i] ?? '')
         .join('');
     } else {
+      // 文字モード：選択されたインデックスから直接文字を取得
       text = [...selectedGroups].sort((a, b) => a - b)
         .map(i => (baseText || '')[i] ?? '')
         .join('');
@@ -1149,11 +1168,11 @@ const ScribbleTranslator = () => {
     if (selectedGroups.size > 0) {
       // 選択範囲の最小〜最大indexを置換
       let indices;
-      if (bunsetsuGroups.length > 0) {
-        // 文節がある場合：選択された文節のインデックス
+      if (bunsetsuGroups.length > 0 && isBunsetsuMode) {
+        // 文節モード：選択された文節のインデックス
         indices = [...selectedGroups].flatMap((gi) => bunsetsuGroups[gi]?.indices ?? []);
-    } else {
-        // 文節がない場合：選択された文字のインデックス
+      } else {
+        // 文字モード：選択された文字のインデックス
         indices = [...selectedGroups];
       }
       
