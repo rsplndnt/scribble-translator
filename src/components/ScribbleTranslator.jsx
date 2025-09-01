@@ -114,6 +114,8 @@ const ScribbleTranslator = () => {
   const [inlineEditText, setInlineEditText] = useState('');
   const [inlineEditPosition, setInlineEditPosition] = useState(null);
   const [overwriteAllOnFinish, setOverwriteAllOnFinish] = useState(false); // ツールバーからの入力は原文を全上書き
+  const inlineTextareaRef = useRef(null); // インラインキーボード用テキストエリア参照
+  const [shouldSelectAllOnOpen, setShouldSelectAllOnOpen] = useState(false); // 初回オープン時に全選択
   
   // 日本語入力の変換確定状態
   const [isComposing, setIsComposing] = useState(false); // IME変換中かどうか
@@ -788,6 +790,7 @@ const ScribbleTranslator = () => {
     }
     
     setInlineEditText(text);
+    setShouldSelectAllOnOpen(true);
     setInlineEditMode(mode);
     setInlineEditPosition(editPosition);
     
@@ -1420,6 +1423,16 @@ const ScribbleTranslator = () => {
             <div>
               <textarea
                 value={inlineEditText}
+                ref={(el) => {
+                  inlineTextareaRef.current = el;
+                  if (el && shouldSelectAllOnOpen) {
+                    // 初回オープン時に全選択
+                    requestAnimationFrame(() => {
+                      try { el.select(); } catch {}
+                    });
+                    setShouldSelectAllOnOpen(false);
+                  }
+                }}
                 onChange={(e) => {
                   setInlineEditText(e.target.value);
                   // テキストエリアの高さを自動調整
@@ -1479,12 +1492,7 @@ const ScribbleTranslator = () => {
                 }}
                 placeholder="キーボードからテキストを入力してください" // Goodpatch: 明確なプレースホルダー
                 autoFocus
-                ref={(textarea) => {
-                  if (textarea) {
-                    // 初期表示時に高さ調整を適用
-                    setTimeout(() => adjustTextareaHeight(textarea), 100);
-                  }
-                }}
+                // 初期表示時の高さ調整は上のref内で実施済み
               />
           <div style={{
                 display: "flex", 
