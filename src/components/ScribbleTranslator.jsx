@@ -752,13 +752,15 @@ const ScribbleTranslator = () => {
     
     // 選択された文字のテキストを取得
     let text = '';
+    // 本番環境で visibleText が未反映のタイミングがあるためフォールバック
+    const baseText = (visibleText && visibleText.length > 0) ? visibleText : currentText;
     if (bunsetsuGroups.length > 0) {
       text = [...selectedGroups].sort((a, b) => a - b)
         .map(i => bunsetsuGroups[i]?.text ?? '')
         .join('');
     } else {
       text = [...selectedGroups].sort((a, b) => a - b)
-        .map(i => displayText[i] ?? '')
+        .map(i => (baseText || '')[i] ?? '')
         .join('');
     }
     
@@ -907,6 +909,9 @@ const ScribbleTranslator = () => {
       
       if (recognizedText) {
         setInlineEditText(recognizedText);
+        // 選択がない場合は確定時に原文を全上書き
+        setOverwriteAllOnFinish(selectedGroups.size === 0);
+        setShouldSelectAllOnOpen(true);
         
         // 履歴に追加
         setInputHistory(prev => {
