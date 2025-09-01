@@ -1340,6 +1340,8 @@ const ScribbleTranslator = () => {
           <button
             onClick={() => {
               console.log('リセットボタンクリック');
+              // 開いているインライン編集/手書きを確実にクローズ
+              closeInlineEditors();
               setCurrentText(""); // ◯文字をリセット
               setVisibleText(""); // 表示テキストをリセット
               setSelectedGroups(new Set()); // 選択状態をリセット
@@ -1349,6 +1351,18 @@ const ScribbleTranslator = () => {
               setInlineEditText(''); // インライン編集テキストもリセット
               setInlineEditPosition(null); // インライン編集位置もリセット
               setIsInkDrawing(false); // 手書き描画状態もリセット
+
+              // UI/計算用の補助状態も完全リセット
+              setShowInputDropdown(false);
+              setBunsetsuGroups([]);
+              setTilePositions([]);
+              setDrawPath([]);
+              setIsDrawing(false);
+              setFloatPos(null);
+              setOverwriteAllOnFinish(false);
+              setShouldSelectAllOnOpen(false);
+              setLastScribbleResult(false);
+              setLastScribbleRatio(0);
               
               // 手書きキャンバスもクリア
               if (inkCanvasRef.current) {
