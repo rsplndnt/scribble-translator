@@ -113,6 +113,7 @@ const ScribbleTranslator = () => {
   const [inlineEditMode, setInlineEditMode] = useState(null); // 'keyboard' | 'ink' | null
   const [inlineEditText, setInlineEditText] = useState('');
   const [inlineEditPosition, setInlineEditPosition] = useState(null);
+  const [overwriteAllOnFinish, setOverwriteAllOnFinish] = useState(false); // ツールバーからの入力は原文を全上書き
   
   // 日本語入力の変換確定状態
   const [isComposing, setIsComposing] = useState(false); // IME変換中かどうか
@@ -803,19 +804,27 @@ const ScribbleTranslator = () => {
         return newHistory;
       });
       
-      // 最初の入力時（visibleTextがない場合）は直接設定
-      if (!visibleText) {
+      // 上書き挿入（ツールバーからの開始）か置換（選択修正）かを分岐
+      if (overwriteAllOnFinish) {
         setCurrentText(finalText);
         setVisibleText(finalText);
+        setSelectedGroups(new Set());
         setMode("shown");
       } else {
-        // 既存のテキストがある場合は置換
-        applyReplace(finalText);
+        if (!visibleText) {
+          setCurrentText(finalText);
+          setVisibleText(finalText);
+          setMode("shown");
+        } else {
+          // 既存のテキストがある場合は置換
+          applyReplace(finalText);
+        }
       }
     }
     setInlineEditMode(null);
     setInlineEditText('');
     setInlineEditPosition(null);
+    setOverwriteAllOnFinish(false);
   };
 
   /* ------ インライン編集キャンセル ------ */
@@ -1145,6 +1154,7 @@ const ScribbleTranslator = () => {
                   if (selectedInputMethod === 'voice') {
                     toggleMic();
                   } else if (selectedInputMethod === 'keyboard') {
+                    setOverwriteAllOnFinish(true);
                     setInlineEditMode('keyboard');
                     setInlineEditText('');
                     const centerX = window.innerWidth / 2 - 225;
