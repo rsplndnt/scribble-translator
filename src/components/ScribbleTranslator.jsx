@@ -1454,7 +1454,7 @@ const ScribbleTranslator = () => {
                     boxShadow: "0 0 0 3px rgba(9, 111, 202, 0.1)", // Goodpatch: フォーカスリング
                   }
                 }}
-                placeholder="修正したいテキストを入力してください" // Goodpatch: 明確なプレースホルダー
+                placeholder="キーボードからテキストを入力してください" // Goodpatch: 明確なプレースホルダー
                 autoFocus
                 ref={(textarea) => {
                   if (textarea) {
