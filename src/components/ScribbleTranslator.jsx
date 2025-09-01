@@ -123,6 +123,13 @@ const ScribbleTranslator = () => {
   const inkCanvasRef = useRef(null);
   const [isInkDrawing, setIsInkDrawing] = useState(false);
 
+  const closeInlineEditors = useCallback(() => {
+    setInlineEditMode(null);
+    setInlineEditText('');
+    setInlineEditPosition(null);
+    setIsInkDrawing(false);
+  }, []);
+
   // 文字index -> 文節index の逆引きを作成（選択ハイライト/タップ判定を高速化）
   const charToGroup = useMemo(() => {
     const map = new Map();
@@ -1151,6 +1158,8 @@ const ScribbleTranslator = () => {
               {/* 入力開始ボタン */}
               <button 
                 onClick={() => {
+                  // 入力方式切替のたびに開いているインライン編集は閉じる
+                  closeInlineEditors();
                   if (selectedInputMethod === 'voice') {
                     toggleMic();
                   } else if (selectedInputMethod === 'keyboard') {
@@ -1215,6 +1224,7 @@ const ScribbleTranslator = () => {
               }}>
           <button 
                   onClick={() => {
++                    closeInlineEditors();
                     setSelectedInputMethod('voice');
                     setShowInputDropdown(false);
                   }}
@@ -1234,9 +1244,11 @@ const ScribbleTranslator = () => {
           </button>
           <button 
                     onClick={() => {
++                      closeInlineEditors();
                       setSelectedInputMethod('keyboard');
                       setShowInputDropdown(false);
-                      // キーボード入力を直接開始
+                      // 常に空で開始し、確定時は原文を上書き
+                      setOverwriteAllOnFinish(true);
                       setInlineEditMode('keyboard');
                       setInlineEditText('');
                       const centerX = window.innerWidth / 2 - 225;
@@ -1261,6 +1273,7 @@ const ScribbleTranslator = () => {
           </button>
             <button 
                     onClick={() => {
++                      closeInlineEditors();
                       setSelectedInputMethod('handwriting');
                       setShowInputDropdown(false);
                       // 手書き入力を直接開始
