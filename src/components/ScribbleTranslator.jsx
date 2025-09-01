@@ -995,7 +995,7 @@ const ScribbleTranslator = () => {
           });
         }
       });
-    } else {
+      } else {
       // 文節がない場合：選択されたインデックスをそのまま使用
       del = new Set(selectedGroups);
       console.log('- 文字モード - 選択されたインデックス:', selectedGroups);
@@ -1221,8 +1221,8 @@ const ScribbleTranslator = () => {
                   }}
                                   >
                     🎤 音声入力
-                  </button>
-                  <button
+          </button>
+          <button 
                     onClick={() => {
                       setSelectedInputMethod('keyboard');
                       setShowInputDropdown(false);
@@ -1235,7 +1235,7 @@ const ScribbleTranslator = () => {
                       setIsComposing(false);
                       setEnterPressCount(0);
                     }}
-                    style={{
+            style={{
                       width: '100%',
                       padding: '12px 16px',
                       border: 'none',
@@ -1248,8 +1248,8 @@ const ScribbleTranslator = () => {
                     }}
                   >
                     ⌨️ キーボード入力
-                  </button>
-                  <button
+          </button>
+            <button 
                     onClick={() => {
                       setSelectedInputMethod('handwriting');
                       setShowInputDropdown(false);
@@ -1262,7 +1262,7 @@ const ScribbleTranslator = () => {
                       setIsComposing(false);
                       setEnterPressCount(0);
                     }}
-                    style={{
+              style={{
                       width: '100%',
                       padding: '12px 16px',
                       border: 'none',
@@ -1274,7 +1274,7 @@ const ScribbleTranslator = () => {
                     }}
                   >
                     ✍️ 手書き入力
-                  </button>
+            </button>
               </div>
             )}
           </div>
@@ -1290,7 +1290,7 @@ const ScribbleTranslator = () => {
                 style={styles.btnPurple}
               >
                 🗣️ 表示
-              </button>
+          </button>
             )}
             
             {/* 履歴表示ボタン */}
@@ -1369,7 +1369,7 @@ const ScribbleTranslator = () => {
             fontFamily: 'monospace',
             marginLeft: '8px',
           }}>
-            🎯 {lastScribbleResult ? '●' : '○'} {lastScribbleRatio ? lastScribbleRatio.toFixed(2) : '0.00'} &gt;2.0
+            🎯 {lastScribbleResult ? '●' : '○'} {lastScribbleRatio ? lastScribbleRatio.toFixed(2) : '0.00'} &gt; 2.0
           </span>
         </div>
       </div>
@@ -1633,7 +1633,7 @@ const ScribbleTranslator = () => {
                   <button onClick={() => setSelectedGroups(new Set())} style={styles.btnGhostSm}>
                     ✖ キャンセル
                   </button>
-                </div>
+          </div>
               )}
 
 
