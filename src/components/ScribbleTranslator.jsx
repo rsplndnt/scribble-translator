@@ -249,8 +249,11 @@ const ScribbleTranslator = () => {
     const build = async () => {
       if (!visibleText) {
         setBunsetsuGroups([]);
-          return;
-        }
+        // テキストがない場合は関連する状態もクリア
+        setSelectedGroups(new Set());
+        setFloatPos(null);
+        return;
+      }
       if (window.kuromoji) {
         const dicPathCandidates = [
           "./dict/",
@@ -348,6 +351,14 @@ const ScribbleTranslator = () => {
   /* ------ 1行タイルのレイアウト ------ */
   const displayText = visibleText;
   useEffect(() => {
+    // visibleTextが変更されたら選択状態をリセット
+    if (mode === 'idle' || mode === 'shown') {
+      setSelectedGroups(new Set());
+      setFloatPos(null);
+      setOverwriteAllOnFinish(false);
+      setShouldSelectAllOnOpen(false);
+    }
+    
     const el = topRef.current;
     const w = el?.offsetWidth || 900;
     const margin = 12; // 左端のマージンを調整（4px左に移動）
@@ -481,6 +492,10 @@ const ScribbleTranslator = () => {
   const stopDraw = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
+    
+    // 選択前の状態をクリア
+    setOverwriteAllOnFinish(false);
+    setShouldSelectAllOnOpen(false);
     
     // Canvas描画をクリア
     const canvas = drawCanvasRef.current;
@@ -845,6 +860,13 @@ const ScribbleTranslator = () => {
     setInlineEditText('');
     setInlineEditPosition(null);
     setIsInkDrawing(false);
+    setOverwriteAllOnFinish(false);
+    setShouldSelectAllOnOpen(false);
+    // キャンセル時は選択状態も解除
+    if (selectedGroups.size > 0) {
+      setSelectedGroups(new Set());
+      setFloatPos(null);
+    }
   };
 
   /* ------ 手書き開始 ------ */
@@ -1363,10 +1385,18 @@ const ScribbleTranslator = () => {
               setShouldSelectAllOnOpen(false);
               setLastScribbleResult(false);
               setLastScribbleRatio(0);
+              setIsComposing(false);
+              setEnterPressCount(0);
               
               // 手書きキャンバスもクリア
               if (inkCanvasRef.current) {
                 const canvas = inkCanvasRef.current;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+              }
+              // なぞり用キャンバスもクリア
+              if (drawCanvasRef.current) {
+                const canvas = drawCanvasRef.current;
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
               }
