@@ -130,7 +130,6 @@ const ScribbleTranslator = () => {
     setInlineEditText('');
     setInlineEditPosition(null);
     setIsInkDrawing(false);
-    setOverwriteAllOnFinish(false);
   }, []);
 
   // 文字index -> 文節index の逆引きを作成（選択ハイライト/タップ判定を高速化）
@@ -750,7 +749,6 @@ const ScribbleTranslator = () => {
   /* ------ インライン編集開始 ------ */
   const startInlineEdit = (mode) => {
     if (!selectedGroups.size) return;
-    setOverwriteAllOnFinish(false); // 選択修正は部分置換
     
     // 選択された文字のテキストを取得
     let text = '';
@@ -760,7 +758,7 @@ const ScribbleTranslator = () => {
         .join('');
     } else {
       text = [...selectedGroups].sort((a, b) => a - b)
-        .map(i => visibleText[i] ?? '')
+        .map(i => displayText[i] ?? '')
         .join('');
     }
     
@@ -909,7 +907,6 @@ const ScribbleTranslator = () => {
       
       if (recognizedText) {
         setInlineEditText(recognizedText);
-        setOverwriteAllOnFinish(false); // 手書き→キーボードは部分置換前提
         
         // 履歴に追加
         setInputHistory(prev => {
