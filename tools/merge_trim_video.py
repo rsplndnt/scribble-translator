@@ -16,8 +16,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 
 VIDEO_EXTS = {".mp4", ".mov", ".m4v", ".mts", ".m2ts", ".avi", ".mkv", ".mpg", ".mpeg", ".wmv", ".ts"}
+
+# 「変化したセルの割合(%)」がこれ未満なら実質静止とみなす
+STILL_FLOOR = 0.15
 
 try:
     import numpy as np
@@ -96,8 +100,12 @@ def probe(path):
 
 # ---------------------------------------------------------------- 動き解析
 
-def motion_series(path, sample_fps, grid_w, grid_h):
-    """縮小したグレースケール画像のフレーム間差分を返す (1サンプル=1値)。"""
+def motion_series(path, sample_fps, grid_w, grid_h, cell_threshold):
+    """各サンプル間で「何 % のセルが変化したか」を返す。
+
+    画面全体の平均差分ではなくセル単位の変化数を数えるので、
+    広い画角の中で被写体だけが動くような映像でも動きを拾える。
+    """
     cmd = ["ffmpeg", "-v", "error", "-i", path,
            "-vf", f"fps={sample_fps},scale={grid_w}:{grid_h},format=gray",
            "-f", "rawvideo", "-pix_fmt", "gray", "-"]
@@ -113,12 +121,14 @@ def motion_series(path, sample_fps, grid_w, grid_h):
                 if np is not None:
                     a = np.frombuffer(prev, dtype=np.uint8).astype(np.int16)
                     b = np.frombuffer(buf, dtype=np.uint8).astype(np.int16)
-                    diffs.append(float(np.abs(a - b).mean()))
+                    changed = int(np.count_nonzero(np.abs(a - b) > cell_threshold))
                 else:
-                    total = 0
+                    changed = 0
                     for x, y in zip(prev, buf):
-                        total += x - y if x > y else y - x
-                    diffs.append(total / size)
+                        d = x - y
+                        if d > cell_threshold or -d > cell_threshold:
+                            changed += 1
+                diffs.append(changed * 100.0 / size)
             prev = buf
     finally:
         proc.stdout.close()
@@ -137,26 +147,22 @@ def percentile(values, pct):
 def auto_threshold(diffs):
     """変化量の分布から「静止」と「動き」の境目を推定する。
 
-    静止側の値がまとまった塊になっていて、動き側とはっきり離れている場合だけ
-    その中間をしきい値にする。差がはっきりしない場合は、絶対値で
-    「全編静止」か「全編動き」かを判定する（迷ったら残す方に倒す）。
+    この指標では静止＝ほぼ 0% なので、静止側の代表値が実際に 0 付近にある
+    ときだけ「静止区間が存在する」と判断し、静止側と動き側の間を取る。
+    最も静かな瞬間ですら動いている映像は、全編動きとみなして全部残す。
     """
     if not diffs:
-        return 1.2, 0.0, 0.0
+        return STILL_FLOOR, 0.0, 0.0
     lo = percentile(diffs, 10)   # 静止側の代表値
-    mid = percentile(diffs, 50)
     hi = percentile(diffs, 90)   # 動き側の代表値
-    still_floor = 1.2            # 縮小画像でこれ未満の変化は実質静止
 
-    if hi >= max(lo * 2.0, lo + 1.0):
-        # 静止と動きがはっきり分かれている → その間を取る
-        thr = lo + 0.25 * (hi - lo)
-        return max(thr, still_floor, lo * 1.3, 0.4), lo, hi
-
-    # 分布が一様 = 全編ほぼ同じ状態
-    if mid < still_floor:
-        return still_floor, lo, hi          # 全編静止 → 何も残さない
-    return max(lo * 0.9, 0.4), lo, hi       # 全編動き → 全部残す
+    if lo > STILL_FLOOR * 3:
+        # 一番静かな瞬間にも動きがある = 全編動き → 全部残す
+        return max(lo * 0.9, STILL_FLOOR / 3), lo, hi
+    if hi < STILL_FLOOR * 2:
+        # 動き側も 0 付近 = 全編静止 → 何も残さない
+        return STILL_FLOOR, lo, hi
+    return max(lo + 0.25 * (hi - lo), STILL_FLOOR), lo, hi
 
 
 def build_segments(diffs, sample_fps, duration, threshold, pad, merge_gap, min_len):
@@ -183,27 +189,66 @@ def build_segments(diffs, sample_fps, duration, threshold, pad, merge_gap, min_l
 
 # ---------------------------------------------------------------- 書き出し
 
-def encode_segment(src, start, end, dst, target, has_audio, crf, preset):
+def pick_encoder(mode, target):
+    """使えるハードウェアエンコーダを実際に試してから選ぶ。"""
+    if mode == "libx264":
+        return "libx264"
+    listed = run(["ffmpeg", "-v", "error", "-hide_banner", "-encoders"]).stdout.decode(
+        "utf-8", "replace")
+    if "h264_videotoolbox" not in listed:
+        if mode == "videotoolbox":
+            sys.exit("エラー: h264_videotoolbox がこの ffmpeg では使えません。")
+        return "libx264"
+    # 実際に1秒だけエンコードして動作確認する（使えなければ libx264 に戻す）
+    w, h, _ = target
+    probe_cmd = ["ffmpeg", "-v", "error", "-y", "-f", "lavfi",
+                 "-i", f"color=c=black:s={w}x{h}:d=1:r=10", "-c:v", "h264_videotoolbox",
+                 "-f", "null", "-"]
+    if run(probe_cmd).returncode == 0:
+        return "h264_videotoolbox"
+    if mode == "videotoolbox":
+        sys.exit("エラー: h264_videotoolbox での試験エンコードに失敗しました。")
+    return "libx264"
+
+
+def video_args(encoder, target, crf, preset):
+    if encoder == "h264_videotoolbox":
+        w, h, fps = target
+        # 解像度と fps から妥当なビットレートを決める (約 0.10 bit/pixel)
+        bitrate = min(max(int(w * h * fps * 0.10), 2_000_000), 20_000_000)
+        return ["-c:v", "h264_videotoolbox", "-b:v", str(bitrate)]
+    return ["-c:v", "libx264", "-preset", preset, "-crf", str(crf)]
+
+
+def encode_segment(src, start, end, dst, target, has_audio, crf, preset, encoder):
     w, h, fps = target
     vf = (f"scale={w}:{h}:force_original_aspect_ratio=decrease,"
           f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},format=yuv420p")
-    cmd = ["ffmpeg", "-v", "error", "-y", "-ss", f"{start:.3f}", "-i", src]
-    if not has_audio:
-        cmd += ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000"]
-    cmd += ["-t", f"{max(end - start, 0.05):.3f}",
-            "-map", "0:v:0", "-map", ("0:a:0" if has_audio else "1:a:0"),
-            "-vf", vf, "-c:v", "libx264", "-preset", preset, "-crf", str(crf),
-            "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
-            "-video_track_timescale", "90000", "-shortest", dst]
-    r = run(cmd)
+
+    def attempt(enc):
+        cmd = ["ffmpeg", "-v", "error", "-y", "-ss", f"{start:.3f}", "-i", src]
+        if not has_audio:
+            cmd += ["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000"]
+        cmd += ["-t", f"{max(end - start, 0.05):.3f}",
+                "-map", "0:v:0", "-map", ("0:a:0" if has_audio else "1:a:0"), "-vf", vf]
+        cmd += video_args(enc, target, crf, preset)
+        cmd += ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
+                "-video_track_timescale", "90000", "-shortest", dst]
+        return run(cmd)
+
+    r = attempt(encoder)
+    if r.returncode != 0 and encoder != "libx264":
+        r = attempt("libx264")          # ハードウェアで失敗したらソフトで再試行
     if r.returncode != 0:
         sys.stderr.write(r.stderr.decode("utf-8", "replace"))
     return r.returncode == 0
 
 
 def hms(sec):
-    sec = max(0.0, sec)
-    return f"{int(sec // 3600):d}:{int(sec // 60) % 60:02d}:{sec % 60:04.1f}"
+    sec = round(max(0.0, sec), 1)
+    h, rest = divmod(sec, 3600)
+    m, s = divmod(rest, 60)
+    return f"{int(h):d}:{int(m):02d}:{s:04.1f}"
 
 
 def main():
@@ -214,13 +259,23 @@ def main():
     ap.add_argument("-r", "--recursive", action="store_true", help="サブフォルダも探す")
     ap.add_argument("--sort", choices=["name", "time"], default="name", help="並び順 (既定: name)")
     ap.add_argument("--threshold", default="auto",
-                    help="動き判定のしきい値。auto または数値 (大きいほど多くカット)")
+                    help="動き判定のしきい値(変化セルの%%)。auto または数値。大きいほど多くカット")
     ap.add_argument("--pad", type=float, default=0.7, help="動きの前後に残す秒数 (既定: 0.7)")
     ap.add_argument("--merge-gap", type=float, default=1.5,
                     help="この秒数以下の静止は繋げて残す (既定: 1.5)")
     ap.add_argument("--min-len", type=float, default=0.5,
                     help="これより短い区間は捨てる (既定: 0.5)")
     ap.add_argument("--sample-fps", type=float, default=4.0, help="解析のサンプリングfps (既定: 4)")
+    ap.add_argument("--grid-width", type=int, default=64,
+                    help="解析用の縮小幅。小さい被写体が写らない場合は増やす (既定: 64)")
+    ap.add_argument("--cell-threshold", type=int, default=12,
+                    help="1セルが変化したとみなす明度差 (既定: 12)")
+    ap.add_argument("-j", "--jobs", type=int, default=0,
+                    help="並列数 (既定: CPU数と4の小さい方)")
+    ap.add_argument("--encoder", choices=["auto", "libx264", "videotoolbox"], default="auto",
+                    help="映像エンコーダ (既定: auto = Mac ならハードウェア)")
+    ap.add_argument("--analyze", action="store_true",
+                    help="各ファイルの変化量の分布だけを表示する（しきい値の調整用）")
     ap.add_argument("--no-trim", action="store_true", help="カットせず結合だけする")
     ap.add_argument("--dry-run", action="store_true", help="解析結果だけ表示して書き出さない")
     ap.add_argument("--crf", type=int, default=20, help="画質 (小さいほど高画質・既定: 20)")
@@ -231,18 +286,18 @@ def main():
 
     need("ffmpeg")
     need("ffprobe")
+    jobs = args.jobs or min(4, os.cpu_count() or 1)
 
     files = collect_inputs(args.inputs, args.recursive, args.sort)
     if not files:
         sys.exit("動画ファイルが見つかりませんでした。パスと拡張子を確認してください。")
 
-    infos = []
-    for f in files:
-        info = probe(f)
-        if info is None:
-            print(f"  スキップ (読み込めません): {os.path.basename(f)}")
-            continue
-        infos.append(info)
+    infos, skipped = [], []
+    with ThreadPoolExecutor(max_workers=jobs) as pool:
+        for f, info in zip(files, pool.map(probe, files)):
+            (infos if info else skipped).append(info or f)
+    for f in skipped:
+        print(f"  スキップ (読み込めません): {os.path.basename(f)}")
     if not infos:
         sys.exit("読み込める動画がありませんでした。")
 
@@ -253,63 +308,90 @@ def main():
     fps = args.fps or round(infos[0]["fps"], 3)
     target = (w, h, fps)
 
-    print(f"対象: {len(infos)} ファイル / 出力 {w}x{h} @ {fps}fps")
-    print("-" * 62)
+    grid_w = args.grid_width
+    grid_h = max(2, int(round(grid_w * (infos[0]["height"] or 9)
+                              / (infos[0]["width"] or 16) / 2)) * 2)
+    print(f"対象: {len(infos)} ファイル / 出力 {w}x{h} @ {fps}fps / 並列 {jobs} / "
+          f"解析グリッド {grid_w}x{grid_h}")
+    print("-" * 68)
 
-    plan, total_src, total_keep = [], 0.0, 0.0
-    grid_w = 64
-    grid_h = max(2, int(round(64 * (infos[0]["height"] or 9) / (infos[0]["width"] or 16) / 2)) * 2)
+    def analyze(info):
+        return motion_series(info["path"], args.sample_fps, grid_w, grid_h,
+                             args.cell_threshold)
 
-    for info in infos:
-        name = os.path.basename(info["path"])
-        dur = info["duration"]
-        total_src += dur
-        if args.no_trim:
-            plan.append((info, [(0.0, dur)]))
-            total_keep += dur
-            print(f"{name}: {hms(dur)} (カットなし)")
-            continue
+    if args.no_trim:
+        plan = [(info, [(0.0, info["duration"])]) for info in infos]
+        for info in infos:
+            print(f"{os.path.basename(info['path'])}: {hms(info['duration'])} (カットなし)")
+        total_src = total_keep = sum(i["duration"] for i in infos)
+    else:
+        plan, total_src, total_keep = [], 0.0, 0.0
+        with ThreadPoolExecutor(max_workers=jobs) as pool:
+            for info, diffs in zip(infos, pool.map(analyze, infos)):
+                name = os.path.basename(info["path"])
+                dur = info["duration"]
+                total_src += dur
 
-        diffs = motion_series(info["path"], args.sample_fps, grid_w, grid_h)
-        if args.threshold == "auto":
-            thr, noise, hi = auto_threshold(diffs)
-        else:
-            thr, noise, hi = float(args.threshold), percentile(diffs, 10), percentile(diffs, 90)
+                if args.analyze:
+                    pcts = " ".join(f"p{p}={percentile(diffs, p):.2f}"
+                                    for p in (1, 5, 10, 25, 50, 75, 90, 95, 99))
+                    print(f"{name}: n={len(diffs)} 最大={max(diffs or [0]):.2f} {pcts}")
+                    continue
 
-        segs = build_segments(diffs, args.sample_fps, dur, thr,
-                              args.pad, args.merge_gap, args.min_len)
-        kept = sum(e - s for s, e in segs)
-        total_keep += kept
-        ratio = (kept / dur * 100) if dur else 0
-        print(f"{name}: {hms(dur)} → {hms(kept)} ({ratio:.0f}% 残す, "
-              f"{len(segs)}区間, しきい値 {thr:.2f} / 静止 {noise:.2f} / 動き {hi:.2f})")
-        if segs:
-            plan.append((info, segs))
-        else:
-            print("    ⚠ 全編が静止と判定されました（このファイルは丸ごと除外）")
+                if args.threshold == "auto":
+                    thr, lo, hi = auto_threshold(diffs)
+                else:
+                    thr = float(args.threshold)
+                    lo, hi = percentile(diffs, 10), percentile(diffs, 90)
 
-    print("-" * 62)
-    print(f"合計: {hms(total_src)} → {hms(total_keep)} "
-          f"({hms(total_src - total_keep)} カット)")
+                segs = build_segments(diffs, args.sample_fps, dur, thr,
+                                      args.pad, args.merge_gap, args.min_len)
+                kept = sum(e - s for s, e in segs)
+                total_keep += kept
+                ratio = (kept / dur * 100) if dur else 0
+                print(f"{name}: {hms(dur)} → {hms(kept)} ({ratio:.0f}% 残す, "
+                      f"{len(segs)}区間, しきい値 {thr:.2f}% / 静止 {lo:.2f}% / 動き {hi:.2f}%)")
+                if segs:
+                    plan.append((info, segs))
+                else:
+                    print("    ⚠ 全編が静止と判定されました（このファイルは丸ごと除外）")
+
+    if args.analyze:
+        print("\n--analyze のため書き出しは行いません。"
+              "\n動きのある区間の値を見て --threshold に指定してください。")
+        return
+
+    print("-" * 68)
+    print(f"合計: {hms(total_src)} → {hms(total_keep)} ({hms(total_src - total_keep)} カット)")
 
     if args.dry_run:
         print("\n--dry-run のため書き出しは行いません。")
         return
     if not plan:
-        sys.exit("残す区間がありません。--threshold を小さくして再実行してください。")
+        sys.exit("残す区間がありません。--analyze で分布を確認し --threshold を下げてください。")
+
+    encoder = pick_encoder(args.encoder, target)
+    print(f"エンコーダ: {encoder}")
 
     tmp = tempfile.mkdtemp(prefix="mergetrim_")
     try:
-        parts, idx = [], 0
-        total_parts = sum(len(s) for _, s in plan)
+        tasks = []
         for info, segs in plan:
             for start, end in segs:
-                idx += 1
-                dst = os.path.join(tmp, f"part_{idx:05d}.mp4")
-                print(f"\r書き出し中 {idx}/{total_parts} ...", end="", flush=True)
-                if encode_segment(info["path"], start, end, dst, target,
-                                  info["has_audio"], args.crf, args.preset):
-                    parts.append(dst)
+                tasks.append((info, start, end))
+        done = [0]
+
+        def work(idx_task):
+            idx, (info, start, end) = idx_task
+            dst = os.path.join(tmp, f"part_{idx:05d}.mp4")
+            ok = encode_segment(info["path"], start, end, dst, target,
+                                info["has_audio"], args.crf, args.preset, encoder)
+            done[0] += 1
+            print(f"\r書き出し中 {done[0]}/{len(tasks)} ...", end="", flush=True)
+            return dst if ok else None
+
+        with ThreadPoolExecutor(max_workers=jobs) as pool:
+            parts = [p for p in pool.map(work, enumerate(tasks, 1)) if p]
         print()
         if not parts:
             sys.exit("区間の書き出しに失敗しました。")
@@ -330,8 +412,7 @@ def main():
         final = probe(out)
         print(f"\n完成: {out}")
         if final:
-            print(f"       {hms(final['duration'])} / "
-                  f"{os.path.getsize(out) / 1e6:.1f} MB")
+            print(f"       {hms(final['duration'])} / {os.path.getsize(out) / 1e6:.1f} MB")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
